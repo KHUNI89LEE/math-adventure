@@ -1,24 +1,20 @@
-# 수학 우주 연구소 V3
-
-기존 버전과 확실히 구별되도록 전체 UI를 새로 설계한 대규모 개편판입니다.
-
-## 눈에 띄는 변경
-- 앱 이름: 수학 우주 연구소
-- 짙은 보라색 우주 테마
-- 첫 화면 오늘의 연구 미션
-- 6개 학습 행성 카드
-- 수학 성장 지도
-- 단계형 개념 연구실
-- 자리값 블록, 면적모형, 나눗셈 바구니, 수직선 시각화
-- 부모 연구 보고서
-
-## GitHub 업데이트
-압축을 푼 뒤 `math_adventure_pwa` 폴더 안의 파일 전체를 기존 저장소에 업로드하고 Commit changes를 누르세요.
-
-업데이트 확인 주소에는 마지막에 아래를 붙여도 됩니다.
-
-`?v=3`
-
-예: `https://아이디.github.io/math-adventure/?v=3`
-
-설치 앱이 이전 화면을 계속 표시하면 기존 설치 앱을 삭제한 뒤 Chrome에서 위 주소를 열어 다시 설치하세요.
+{
+  "name": "알록달록 수학 놀이터",
+  "short_name": "수학놀이터",
+  "start_url": "./?v=4.1",
+  "display": "standalone",
+  "background_color": "#fffaf6",
+  "theme_color": "#ff8a65",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

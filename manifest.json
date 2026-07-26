@@ -1,20 +1,136 @@
-{
-  "name": "수학 우주 연구소",
-  "short_name": "수학우주",
-  "start_url": "./?v=3",
-  "display": "standalone",
-  "background_color": "#f4f7ff",
-  "theme_color": "#4f46e5",
-  "icons": [
-    {
-      "src": "icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
-  ]
-}
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#ff8a65">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+  <title>알록달록 수학 놀이터</title>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <button id="homeBtn" class="home-logo" aria-label="홈으로">🌈</button>
+    <div>
+      <h1>알록달록 수학 놀이터 <span>V4</span></h1>
+      <p>그림을 만지고, 생각하고, 수학을 발견해요!</p>
+    </div>
+    <button id="reportBtn" class="parent-btn">👨‍👩‍👧 부모 보기</button>
+  </header>
+
+  <main>
+    <section id="homeView">
+      <div class="welcome">
+        <div>
+          <small>안녕, 꼬마 수학자!</small>
+          <h2>오늘은 어떤 수학 나라에서 놀아볼까?</h2>
+          <p>정답을 빨리 맞히는 것보다, 그림을 보며 “왜?”를 생각해 보세요.</p>
+        </div>
+        <div class="welcome-animals">🐻‍❄️ 🐰 🐥</div>
+      </div>
+
+      <div class="mini-stats">
+        <div>⭐ <b id="xpHome">0</b><small>별</small></div>
+        <div>🏅 <b id="solvedHome">0</b><small>푼 문제</small></div>
+        <div>🎯 <b id="accuracyHome">0%</b><small>정답률</small></div>
+      </div>
+
+      <div class="world-grid">
+        <button class="world add" data-world="add">
+          <div class="planet-face">😊</div>
+          <div class="world-symbol">＋</div>
+          <h3>더하기 꽃밭</h3>
+          <p>수 블록을 모아 큰 수를 만들어요.</p>
+          <div class="topics"><span>자리값</span><span>받아올림</span><span>여러 방법</span></div>
+        </button>
+
+        <button class="world sub" data-world="sub">
+          <div class="planet-face">😎</div>
+          <div class="world-symbol">－</div>
+          <h3>빼기 눈꽃마을</h3>
+          <p>십 하나를 일 열 개로 바꾸어 보아요.</p>
+          <div class="topics"><span>받아내림</span><span>차이</span><span>수직선</span></div>
+        </button>
+
+        <button class="world mul" data-world="mul">
+          <div class="planet-face">🤓</div>
+          <div class="world-symbol">×</div>
+          <h3>곱하기 블록도시</h3>
+          <p>점과 네모를 배열해 곱셈을 이해해요.</p>
+          <div class="topics"><span>배열</span><span>면적</span><span>분배법칙</span></div>
+        </button>
+
+        <button class="world div" data-world="div">
+          <div class="planet-face">🥳</div>
+          <div class="world-symbol">÷</div>
+          <h3>나누기 간식섬</h3>
+          <p>친구들에게 간식을 똑같이 나눠요.</p>
+          <div class="topics"><span>등분</span><span>묶기</span><span>곱셈 관계</span></div>
+        </button>
+
+        <button class="world sense" data-world="sense">
+          <div class="planet-face">🧐</div>
+          <div class="world-symbol">💡</div>
+          <h3>수 감각 구름마을</h3>
+          <p>10과 100을 만들어 더 쉽게 계산해요.</p>
+          <div class="topics"><span>둥근 수</span><span>어림</span><span>보정</span></div>
+        </button>
+
+        <button class="world explore" data-world="explore">
+          <div class="planet-face">🤩</div>
+          <div class="world-symbol">🔎</div>
+          <h3>수의 비밀 동굴</h3>
+          <p>숫자 속에 숨은 규칙을 찾아보아요.</p>
+          <div class="topics"><span>홀짝</span><span>약수</span><span>배수</span></div>
+        </button>
+      </div>
+    </section>
+
+    <section id="worldView" class="hidden">
+      <div class="world-header">
+        <button id="backBtn">← 나라 선택</button>
+        <div class="world-title-wrap">
+          <div id="worldMascot" class="big-mascot">🐰</div>
+          <div><small id="worldKicker">수학 나라</small><h2 id="worldTitle"></h2><p id="worldDesc"></p></div>
+        </div>
+      </div>
+
+      <div class="lesson-tabs">
+        <button class="lesson-tab active" data-section="learn">📖 그림으로 배우기</button>
+        <button class="lesson-tab" data-section="play">🖐️ 만져보는 수학</button>
+        <button class="lesson-tab" data-section="quiz">✏️ 문제 풀기</button>
+      </div>
+
+      <div id="learnPanel" class="panel"></div>
+      <div id="playPanel" class="panel hidden"></div>
+
+      <div id="quizPanel" class="panel hidden">
+        <div class="quiz-layout">
+          <div class="question-box">
+            <span>문제를 풀어보세요</span>
+            <div id="problemText" class="problem-text"></div>
+            <p id="questionHint"></p>
+            <div class="answer-row">
+              <input id="answerInput" type="number" inputmode="numeric" placeholder="답">
+              <button id="checkBtn">확인</button>
+              <button id="newBtn" class="soft-btn">새 문제</button>
+            </div>
+            <div id="feedback" class="feedback"></div>
+          </div>
+          <div id="quizVisual" class="quiz-visual"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="reportView" class="hidden">
+      <div class="world-header"><button id="reportBack">← 돌아가기</button><h2>부모 학습 보기</h2></div>
+      <div id="reportCards" class="report-cards"></div>
+      <div class="report-box"><h3>영역별 정답률</h3><div id="modeReport"></div></div>
+      <div class="report-box"><h3>추천</h3><p id="recommendation"></p></div>
+    </section>
+  </main>
+</div>
+<script src="app.js?v=4.1"></script>
+</body>
+</html>
