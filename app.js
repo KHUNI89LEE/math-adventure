@@ -155,15 +155,19 @@ const activities = {
           const work=[...A]; const names=["백","십","일"]; const result=[null,null,null];
           for(let i=2;i>=0;i--){
             if(work[i]<B[i]){
+              steps.push({place:i,title:`${names[i]}의 자리 먼저 살펴보기`,active:i,negative:true,
+                text:`${work[i]} − ${B[i]} = ${work[i]-B[i]}`,
+                detail:`결과가 음수가 되어 바로 뺄 수 없어요. 왼쪽 자리에서 10을 빌려와야 해요.`,work:[...work]});
               let lender=i-1;
               while(lender>=0 && work[lender]===0) lender--;
               if(lender>=0){
                 for(let j=lender;j<i;j++){
+                  const beforeLeft=work[j], beforeRight=work[j+1];
                   work[j]-=1;
                   work[j+1]+=10;
-                  steps.push({place:i,title:`${names[j]}의 자리에서 받아내림`,active:i,borrow:true,
-                    text:`${names[j]}의 자리 1개를 ${names[j+1]}의 자리 10개로 바꿔요.`,
-                    detail:`${names[j]}의 자리는 ${work[j]+1}에서 ${work[j]}로 줄고, ${names[j+1]}의 자리는 ${work[j+1]-10}에서 ${work[j+1]}이 되었어요.`,work:[...work]});
+                  steps.push({place:i,title:`${names[j]}의 자리에서 10 빌려오기`,active:i,borrow:true,borrowFrom:j,borrowTo:j+1,
+                    text:`${names[j]}의 자리에서 1을 빌리면 ${names[j+1]}의 자리에서는 10이 돼요.`,
+                    detail:`${beforeLeft}은 ${work[j]}로 줄고, ${beforeRight} 위에 10을 써서 ${work[j+1]}으로 계산해요.`,work:[...work]});
                 }
               }
             }
@@ -176,7 +180,7 @@ const activities = {
         steps.push({place:3,title:"계산 완료!",active:-1,final:true,text:`${a} ${sign} ${b} = ${answer}`,detail:"자리별 계산을 모두 연결했어요."});
         return steps;
       };
-      const steps=buildSteps(); let stepIndex=-1;
+      const steps=buildSteps(); let stepIndex=-1; let answerCorrect=false; let rewarded=false;
       const digitCells=(prefix,arr)=>arr.map((x,i)=>`<div class="calc-cell place-${i}" id="${prefix}${i}">${x}</div>`).join("");
       $("#activityStage").innerHTML=`
         <div class="train-toolbar">
@@ -194,12 +198,13 @@ const activities = {
               <div class="calc-line"></div>
               <div class="calc-row answer-row"><b></b><div class="calc-cell" id="r0">?</div><div class="calc-cell" id="r1">?</div><div class="calc-cell" id="r2">?</div></div>
             </div>
-            <div class="block-animation" id="blockAnimation"><div class="block-message">정답을 고르면 풀이 과정을 시작할 수 있어요.</div></div>
-            <div class="step-card" id="stepCard"><strong>준비</strong><span>${a} ${sign} ${b}의 답을 먼저 골라 보세요.</span><small>과정을 볼 때는 자동으로 다음 문제로 넘어가지 않아요.</small></div>
+            <div class="block-animation" id="blockAnimation"><div class="block-message">과정을 볼까요, 답을 맞혀볼까요?</div></div>
+            <div class="step-card" id="stepCard"><strong>준비</strong><span>${a} ${sign} ${b}</span><small>정답을 먼저 고르지 않아도 계산 과정을 볼 수 있어요.</small></div>
           </div>
           <div class="control-card">
             <div class="game-title">${a.toLocaleString()} ${sign} ${b.toLocaleString()} = ?</div>
-            <div class="choice-row" id="answerChoices">${choiceButtons(uniqueChoices(answer,10),answer)}</div>
+            <div class="mode-choice" id="modeChoice"><button class="mode-btn process-mode" id="showProcess">🔍 과정 보기</button><button class="mode-btn answer-mode" id="showAnswers">✅ 답 맞히기</button></div>
+            <div class="choice-row hidden" id="answerChoices">${choiceButtons(uniqueChoices(answer,10),answer)}</div>
             <div class="process-controls hidden" id="processControls">
               <button class="process-btn" id="prevStep">◀ 이전 단계</button>
               <button class="process-btn primary-step" id="nextStep">다음 단계 ▶</button>
@@ -224,7 +229,16 @@ const activities = {
         completed.forEach(st=>{if(st.digit!==undefined && st.place>=0){$(`#r${st.place}`).textContent=st.digit;$(`#r${st.place}`).classList.add("written")}});
         const st=steps[stepIndex];
         const latestWork=[...completed].reverse().find(x=>x.work)?.work;
-        if(latestWork) latestWork.forEach((d,i)=>{$(`#a${i}`).textContent=d; if(d!==A[i]) $(`#a${i}`).classList.add("borrowed")});
+        if(latestWork){
+          const top=["","",""];
+          latestWork.forEach((d,i)=>{
+            const base=d>=10?d%10:d;
+            $(`#a${i}`).textContent=base;
+            if(d!==A[i]) $(`#a${i}`).classList.add("borrowed");
+            if(d>=10) top[i]=String(d);
+          });
+          if(operation==="sub") $("#carryRow").innerHTML=top.map(x=>`<div>${x?`<span class="borrow-top">${x}</span>`:""}</div>`).join("");
+        }
         if(st.final){
           String(answer).padStart(3,"0").split("").forEach((d,i)=>{$(`#r${i}`).textContent=d;$(`#r${i}`).classList.add("written")});
           $("#verticalCalc").classList.add("calculation-complete");
@@ -234,8 +248,10 @@ const activities = {
           if(operation==="add" && st.carryOut && st.place>0){
             const cells=["","",""]; cells[st.place-1]=`<span class="carry-bubble">${st.carryOut}</span>`; $("#carryRow").innerHTML=cells.map(x=>`<div>${x}</div>`).join("");
             $("#blockAnimation").innerHTML=`<div class="ones-blocks">${Array.from({length:10},()=>'<i></i>').join("")}</div><div class="bundle-arrow">→</div><div class="ten-bundle">10개 묶음<br><b>1</b></div>`;
+          }else if(operation==="sub" && st.negative){
+            $("#blockAnimation").innerHTML=`<div class="negative-demo"><b>${st.text}</b><span>바로 뺄 수 없어요</span><em>왼쪽 자리에서 10을 빌려와요</em></div>`;
           }else if(operation==="sub" && st.borrow){
-            $("#blockAnimation").innerHTML=`<div class="ten-bundle borrow-source">1묶음</div><div class="bundle-arrow">→</div><div class="ones-blocks spread">${Array.from({length:10},()=>'<i></i>').join("")}</div>`;
+            $("#blockAnimation").innerHTML=`<div class="ten-bundle borrow-source">왼쪽 자리 1</div><div class="bundle-arrow slow-arrow">→</div><div class="borrow-ten"><b>10</b><span>현재 자리 위에 써요</span></div>`;
             document.querySelectorAll(`.place-${st.active}`).forEach(x=>x.classList.add("borrowed"));
           }else{
             $("#blockAnimation").innerHTML=`<div class="digit-combine"><b>${st.text}</b><span>${st.digit!==undefined?`답 칸으로 ${st.digit}이 내려가요 ↓`:""}</span></div>`;
@@ -245,13 +261,28 @@ const activities = {
         $("#stepProgress").textContent=`${stepIndex+1} / ${steps.length} 단계`;
         tone(st.final?880:600,.08);
       };
-      const next=()=>{if(stepIndex<steps.length-1){stepIndex++;drawStep();if(steps[stepIndex].final){celebrate(1);clearInterval(state.processTimer);state.processTimer=null;$("#autoPlay").textContent="▶ 자동 재생"}}};
+      const next=()=>{if(stepIndex<steps.length-1){stepIndex++;drawStep();if(steps[stepIndex].final){clearInterval(state.processTimer);state.processTimer=null;$("#autoPlay").textContent="▶ 자동 재생"}}};
       const prev=()=>{if(stepIndex>=0){stepIndex--;drawStep()}};
+      $("#showProcess").onclick=()=>{
+        $("#modeChoice").classList.add("hidden");
+        $("#answerChoices").classList.add("hidden");
+        $("#processControls").classList.remove("hidden");
+        $("#stepProgress").textContent=`0 / ${steps.length} 단계`;
+        $("#stepCard").innerHTML=`<strong>과정 보기</strong><span>일의 자리부터 천천히 살펴봐요.</span><small>다음 단계 버튼을 눌러 주세요. 과정 보기만으로는 별이 올라가지 않아요.</small>`;
+      };
+      $("#showAnswers").onclick=()=>{
+        $("#modeChoice").classList.add("hidden");
+        $("#answerChoices").classList.remove("hidden");
+        $("#stepProgress").textContent="정답을 골라 보세요.";
+        $("#stepCard").innerHTML=`<strong>답 맞히기</strong><span>${a} ${sign} ${b}의 답은 무엇일까요?</span><small>정답을 맞히면 별을 받아요.</small>`;
+      };
       document.querySelectorAll(".choice").forEach(btn=>btn.onclick=()=>{
         if(Number(btn.dataset.value)!==answer){wrong(btn);return;}
         document.querySelectorAll(".choice").forEach(x=>x.disabled=true);btn.classList.add("correct");
-        $("#processControls").classList.remove("hidden");$("#stepProgress").textContent=`0 / ${steps.length} 단계`;
-        $("#stepCard").innerHTML=`<strong>정답이에요!</strong><span>이제 계산 과정을 직접 넘겨 보세요.</span><small>다음 단계 버튼을 눌러 시작합니다.</small>`;
+        answerCorrect=true;
+        if(!rewarded){celebrate(1);rewarded=true;}
+        $("#processControls").classList.remove("hidden");
+        $("#stepCard").innerHTML=`<strong>정답이에요!</strong><span>원하면 계산 과정도 한 단계씩 볼 수 있어요.</span><small>다음 단계 버튼을 눌러 시작합니다.</small>`;
         tone(760,.12);
       });
       $("#nextStep").onclick=next; $("#prevStep").onclick=prev;
@@ -259,7 +290,7 @@ const activities = {
       $("#autoPlay").onclick=()=>{
         if(state.processTimer){clearInterval(state.processTimer);state.processTimer=null;$("#autoPlay").textContent="▶ 자동 재생";return;}
         $("#autoPlay").textContent="⏸ 멈추기";next();
-        state.processTimer=setInterval(()=>{if(stepIndex>=steps.length-1){clearInterval(state.processTimer);state.processTimer=null;$("#autoPlay").textContent="▶ 자동 재생"}else next()},1500);
+        state.processTimer=setInterval(()=>{if(stepIndex>=steps.length-1){clearInterval(state.processTimer);state.processTimer=null;$("#autoPlay").textContent="▶ 자동 재생"}else next()},2600);
       };
     }
   },
