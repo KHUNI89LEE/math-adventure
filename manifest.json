@@ -1,11 +1,10 @@
 {
-  "name": "수와 연산 탐험대",
-  "short_name": "수학탐험",
-  "start_url": "./",
+  "name": "수학 우주 연구소",
+  "short_name": "수학우주",
+  "start_url": "./?v=3",
   "display": "standalone",
-  "background_color": "#F7F5FF",
-  "theme_color": "#6750A4",
-  "orientation": "any",
+  "background_color": "#f4f7ff",
+  "theme_color": "#4f46e5",
   "icons": [
     {
       "src": "icons/icon-192.png",
