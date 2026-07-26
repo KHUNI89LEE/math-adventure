@@ -236,7 +236,66 @@ const activities = {
       bindChoices(remain,()=>activities.market.render());
     }
   }
-};
+,
+  balance:{
+    badge:"같아요 연구소", title:"양쪽이 똑같아요!", subtitle:"같은 개수와 균형을 몸으로 느끼고 숨은 수를 찾아요.",
+    level:1,
+    render(){ this.renderMenu(); },
+    renderMenu(){
+      const level=this.level||1;
+      $("#activityStage").innerHTML=`
+        <div class="level-tabs">
+          <button class="level-tab ${level===1?"active":""}" data-level="1">1. 같아요 놀이터</button>
+          <button class="level-tab ${level===2?"active":""}" data-level="2">2. 균형 저울</button>
+          <button class="level-tab ${level===3?"active":""}" data-level="3">3. 숨은 상자</button>
+        </div>
+        <div id="balanceGame"></div>`;
+      document.querySelectorAll(".level-tab").forEach(b=>b.onclick=()=>{this.level=Number(b.dataset.level);this.renderMenu()});
+      if(level===1)this.renderEqual(); else if(level===2)this.renderScale(); else this.renderBox();
+    },
+    renderEqual(){
+      const target=2+Math.floor(Math.random()*4);let right=Math.max(0,target-1-Math.floor(Math.random()*2));
+      const draw=()=>{
+        const tilt=right<target?"tilt-left":right>target?"tilt-right":"";
+        $("#balanceGame").innerHTML=`<div class="game-panel"><div class="scene balance-scene">
+          <div class="game-title">오른쪽도 똑같이 만들어 주세요.</div>
+          <div class="balance-beam-wrap"><div class="balance-beam ${tilt}"></div><div class="balance-pivot"></div>
+            <div class="balance-pan left"><div class="pan-rope"></div><div class="pan-dish">${"🍎".repeat(target)}</div></div>
+            <div class="balance-pan right"><div class="pan-rope"></div><div class="pan-dish">${"🍎".repeat(right)||"·"}</div></div>
+          </div>
+          <div class="equal-message">${right===target?"🎉 양쪽이 똑같아요!":"어느 쪽이 더 적을까요?"}</div>
+        </div><div class="control-card"><div class="game-title">사과를 옮겨 보세요</div><p class="game-help">오른쪽 접시에 사과를 더하거나 빼세요.</p>
+          <div class="object-picker"><button class="object-btn" id="addApple">➕🍎</button><button class="object-btn" id="removeApple">➖🍎</button></div>
+          <div class="status-box">왼쪽 ${target}개 · 오른쪽 ${right}개</div></div></div>`;
+        if(right===target){celebrate(1);setTimeout(()=>this.renderEqual(),1100);return;}
+        $("#addApple").onclick=()=>{right++;tone(620,.08);draw()};
+        $("#removeApple").onclick=()=>{if(right>0)right--;tone(420,.08);draw()};
+      };draw();
+    },
+    renderScale(){
+      const base=1+Math.floor(Math.random()*4); const extra=1+Math.floor(Math.random()*3); const answer=base+extra;
+      $("#balanceGame").innerHTML=`<div class="game-panel"><div class="scene balance-scene">
+        <div class="game-title">왼쪽과 같은 무게를 찾아보세요.</div>
+        <div class="balance-beam-wrap"><div class="balance-beam"></div><div class="balance-pivot"></div>
+          <div class="balance-pan left"><div class="pan-rope"></div><div class="pan-dish">${"🟡".repeat(base)} ${"🟢".repeat(extra)}</div></div>
+          <div class="balance-pan right"><div class="pan-rope"></div><div class="pan-dish">?</div></div>
+        </div></div><div class="control-card"><div class="game-title">모두 몇 개일까요?</div><p class="game-help">색이 달라도 개수를 모두 세면 돼요.</p>
+        <div class="choice-row">${choiceButtons(shuffle([answer,answer+1,Math.max(1,answer-1)]),answer)}</div>
+        <div class="status-box">${base}개와 ${extra}개를 함께 놓았어요.</div></div></div>`;
+      bindChoices(answer,()=>this.renderScale());
+    },
+    renderBox(){
+      const hidden=2+Math.floor(Math.random()*5); const add=1+Math.floor(Math.random()*4); const total=hidden+add;
+      $("#balanceGame").innerHTML=`<div class="game-panel"><div class="scene balance-scene">
+        <div class="game-title">상자 안의 사과는 몇 개일까요?</div>
+        <div class="equation-display"><span class="hidden-box">🎁</span> + ${"🍎".repeat(add)} &nbsp; = &nbsp; ${"🍎".repeat(total)}</div>
+        <div class="equal-message">양쪽의 전체 개수가 같아요</div></div>
+        <div class="control-card"><div class="game-title">숨은 수 찾기</div><p class="game-help">오른쪽 전체에서 밖에 보이는 사과를 빼 보세요.</p>
+        <div class="choice-row">${choiceButtons(shuffle([hidden,hidden+1,Math.max(1,hidden-1)]),hidden)}</div>
+        <div class="status-box">🎁 + ${add} = ${total}</div></div></div>`;
+      bindChoices(hidden,()=>this.renderBox());
+    }
+  }};
 function shuffle(arr){return [...arr].sort(()=>Math.random()-.5)}
 function openActivity(name){
   state.current=name;
@@ -248,7 +307,7 @@ function openActivity(name){
   a.render();
 }
 document.querySelectorAll(".place").forEach(btn=>btn.addEventListener("click",()=>openActivity(btn.dataset.place)));
-$("#dailyStart").onclick=()=>openActivity(["train","pizza","farm","pattern","block","market"][new Date().getDay()%6]);
+$("#dailyStart").onclick=()=>openActivity(["train","pizza","farm","pattern","block","market","balance"][new Date().getDay()%7]);
 $("#backBtn").onclick=()=>showScreen("homeScreen");
 $("#homeBtn").onclick=()=>showScreen("homeScreen");
 $("#rewardBtn").onclick=()=>{renderRewards();showScreen("rewardScreen")};
