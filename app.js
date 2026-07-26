@@ -63,50 +63,92 @@ function wrong(btn,msg="한 번 더 생각해 볼까요?"){
 function choiceButtons(values,answer,onCorrect){
   return values.map(v=>`<button class="choice" data-value="${v}">${v}</button>`).join("");
 }
-function bindChoices(answer,onCorrect){
+function uniqueChoices(answer, spread=5){
+  const set=new Set([answer]);
+  const candidates=[answer+1,answer-1,answer+spread,answer-spread,answer+10,answer-10];
+  for(const v of candidates){ if(v>=0) set.add(v); if(set.size>=3) break; }
+  while(set.size<3) set.add(answer+set.size+2);
+  return shuffle([...set].slice(0,3));
+}
+function showResult(text, detail=""){
+  const stage=$("#activityStage");
+  stage.classList.add("result-flash");
+  const scene=stage.querySelector(".scene");
+  if(scene) scene.classList.add("scene-success");
+  const banner=document.createElement("div");
+  banner.className="result-banner";
+  banner.innerHTML=`<strong>${text}</strong>${detail?`<span>${detail}</span>`:""}`;
+  stage.appendChild(banner);
+  setTimeout(()=>stage.classList.remove("result-flash"),700);
+  return banner;
+}
+function bindChoices(answer,onCorrect,resultText="정답이에요!",detail=""){
   document.querySelectorAll(".choice").forEach(btn=>{
     btn.onclick=()=>{
       const val=Number(btn.dataset.value);
       if(val===answer){
+        document.querySelectorAll(".choice").forEach(x=>x.disabled=true);
         btn.classList.add("correct");
+        const status=document.querySelector(".status-box");
+        if(status) status.textContent=`정답: ${answer}`;
         celebrate(1);
-        setTimeout(onCorrect,700);
+        showResult(resultText,detail);
+        setTimeout(onCorrect,1700);
       } else wrong(btn);
     }
   });
 }
 const activities = {
   train:{
-    badge:"기차역", title:"동물 친구 기차", subtitle:"움직이는 기차로 더하기와 빼기를 생각해요.",
+    badge:"기차역", title:"자리값 화물 기차", subtitle:"두 자리와 세 자리 덧셈을 백·십·일의 자리로 합쳐요.",
     render(){
-      const add = Math.random()>.45;
-      const a = 5 + Math.floor(Math.random()*6);
-      const b = add ? 2+Math.floor(Math.random()*5) : 1+Math.floor(Math.random()*4);
-      const answer = add ? a+b : a-b;
-      const animals = ["🐰","🐶","🐱","🐵","🦊"];
-      const first = Array.from({length:Math.min(a,8)},(_,i)=>animals[i%animals.length]).join("");
-      const second = Array.from({length:Math.min(b,5)},(_,i)=>animals[(i+2)%animals.length]).join("");
+      const threeDigit=Math.random()>.45;
+      const a=threeDigit ? 100+Math.floor(Math.random()*700) : 10+Math.floor(Math.random()*80);
+      const b=threeDigit ? 10+Math.floor(Math.random()*380) : 10+Math.floor(Math.random()*80);
+      const answer=a+b;
+      const digits=n=>({h:Math.floor(n/100),t:Math.floor((n%100)/10),o:n%10});
+      const da=digits(a), db=digits(b), ds=digits(answer);
+      const carryOnes=da.o+db.o>=10;
+      const carryTens=da.t+db.t+(carryOnes?1:0)>=10;
+      const car=(label,x,y,kind)=>`<div class="place-car ${kind}"><span>${label}</span><strong>${x}</strong><small>${y}</small></div>`;
       $("#activityStage").innerHTML = `
-        <div class="game-panel">
-          <div class="scene">
-            <div class="game-title">${add?"친구들이 더 탔어요!":"친구들이 내렸어요!"}</div>
-            <div class="game-help">${a}명에서 ${b}명이 ${add?"더 타면":"내리면"} 몇 명일까요?</div>
-            <div class="train-wrap" id="trainMove">
-              <div class="engine">🚂</div>
-              <div class="car">${first}</div>
-              <div class="car alt">${add?second:""}</div>
-            </div>
-            <div class="train-track"></div>
+        <div class="game-panel train-game">
+          <div class="scene train-scene">
+            <div class="game-title">두 화물 기차를 하나로 연결해요!</div>
+            <div class="game-help">각 자리끼리 더한 뒤 받아올림을 살펴보세요.</div>
+            <div class="number-train" id="numberTrainA"><div class="mini-engine">🚂</div>${car("백",da.h,"100의 자리","hundreds")}${car("십",da.t,"10의 자리","tens")}${car("일",da.o,"1의 자리","ones")}</div>
+            <div class="plus-sign">＋</div>
+            <div class="number-train second" id="numberTrainB"><div class="mini-engine">🚂</div>${car("백",db.h,"100의 자리","hundreds")}${car("십",db.t,"10의 자리","tens")}${car("일",db.o,"1의 자리","ones")}</div>
+            <div class="train-track place-track"></div>
+            <div class="carry-preview">${carryOnes?"일의 자리에서 10이 모이면 십의 자리로 1칸 이동!":"일의 자리는 바로 합쳐져요."}</div>
           </div>
           <div class="control-card">
-            <div class="game-title">${a} ${add?"+":"−"} ${b} = ?</div>
-            <p class="game-help">기차의 동물 친구를 눈으로 세어 보세요.</p>
-            <div class="choice-row">${choiceButtons(shuffle([answer,answer+1,Math.max(0,answer-2)]),answer)}</div>
-            <div class="status-box">${add?"두 칸을 합쳐 볼까요?":"내린 친구를 빼 볼까요?"}</div>
+            <div class="game-title">${a.toLocaleString()} + ${b.toLocaleString()} = ?</div>
+            <p class="game-help">백·십·일의 자리를 차례로 합쳐 보세요.</p>
+            <div class="choice-row">${choiceButtons(uniqueChoices(answer,10),answer)}</div>
+            <div class="status-box">정답을 고르면 자리별 계산이 움직여요.</div>
+            <div class="column-sum" aria-label="세로셈">
+              <div>${String(a).padStart(3," ")}</div><div>+ ${String(b).padStart(3," ")}</div><hr><div class="sum-hidden">?</div>
+            </div>
           </div>
         </div>`;
-      setTimeout(()=>$("#trainMove").style.transform="translateX(28px)",150);
-      bindChoices(answer,()=>activities.train.render());
+      setTimeout(()=>{
+        $("#numberTrainA")?.classList.add("arrive-left");
+        $("#numberTrainB")?.classList.add("arrive-right");
+      },80);
+      bindChoices(answer,()=>this.render(),`${a}와 ${b}를 합치면 ${answer}!`,`${carryOnes?"일의 자리 받아올림이 있어요. ":""}${carryTens?"십의 자리에서도 받아올림이 있어요.":""}`);
+      document.querySelectorAll(".choice").forEach(btn=>{
+        const old=btn.onclick;
+        btn.onclick=()=>{
+          const correct=Number(btn.dataset.value)===answer;
+          old();
+          if(correct){
+            document.querySelector(".sum-hidden").textContent=answer;
+            document.querySelector(".sum-hidden").classList.add("reveal-sum");
+            document.querySelectorAll(".place-car").forEach((el,i)=>setTimeout(()=>el.classList.add("merge-car"),i*120));
+          }
+        };
+      });
     }
   },
   pizza:{
@@ -125,7 +167,7 @@ const activities = {
           <div class="control-card">
             <div class="game-title">피자 ${slices}조각을 똑같이 나누면?</div>
             <p class="game-help">한 친구가 몇 조각씩 먹을까요?</p>
-            <div class="choice-row">${choiceButtons(shuffle([each,each+1,Math.max(1,each-1)]),each)}</div>
+            <div class="choice-row">${choiceButtons(uniqueChoices(each,1),each)}</div>
             <div class="status-box">${slices} ÷ ${people} = ?</div>
           </div>
         </div>`;
@@ -149,7 +191,7 @@ const activities = {
           <div class="control-card">
             <div class="game-title">${rows} × ${cols} = ?</div>
             <p class="game-help">한 줄씩 세어도 되고, 묶음으로 생각해도 좋아요.</p>
-            <div class="choice-row">${choiceButtons(shuffle([answer,answer+rows,Math.max(1,answer-cols)]),answer)}</div>
+            <div class="choice-row">${choiceButtons(uniqueChoices(answer,rows),answer)}</div>
             <div class="status-box">${cols}개가 ${rows}묶음이에요.</div>
           </div>
         </div>`;
@@ -180,7 +222,7 @@ const activities = {
         </div>`;
       document.querySelectorAll(".text-choice").forEach(btn=>{
         btn.onclick=()=>{
-          if(btn.dataset.value===s.ans){btn.classList.add("correct");celebrate(1);setTimeout(()=>activities.pattern.render(),700)}
+          if(btn.dataset.value===s.ans){document.querySelectorAll(".choice").forEach(x=>x.disabled=true);btn.classList.add("correct");document.querySelector(".missing").textContent=s.ans;document.querySelector(".missing").classList.add("pattern-reveal");celebrate(1);showResult("규칙을 찾았어요!","반복되는 순서가 완성됐어요.");setTimeout(()=>activities.pattern.render(),1700)}
           else wrong(btn);
         }
       });
@@ -203,7 +245,7 @@ const activities = {
           <div class="control-card">
             <div class="game-title">두 탑은 몇 개 차이일까요?</div>
             <p class="game-help">높은 탑에서 낮은 탑만큼 가려 보세요.</p>
-            <div class="choice-row">${choiceButtons(shuffle([diff,diff+1,Math.max(0,diff-1)]),diff)}</div>
+            <div class="choice-row">${choiceButtons(uniqueChoices(diff,1),diff)}</div>
             <div class="status-box">차이는 빼기로도 나타낼 수 있어요.</div>
           </div>
         </div>`;
@@ -229,7 +271,7 @@ const activities = {
           <div class="control-card">
             <div class="game-title">${pick[1]}를 사면 얼마가 남을까요?</div>
             <p class="game-help">${money}원에서 ${pick[2]}원을 써요.</p>
-            <div class="choice-row">${choiceButtons(shuffle([remain,remain+1,Math.max(0,remain-2)]),remain)}</div>
+            <div class="choice-row">${choiceButtons(uniqueChoices(remain,2),remain)}</div>
             <div class="status-box">${money} − ${pick[2]} = ?</div>
           </div>
         </div>`;
@@ -280,7 +322,7 @@ const activities = {
           <div class="balance-pan left"><div class="pan-rope"></div><div class="pan-dish">${"🟡".repeat(base)} ${"🟢".repeat(extra)}</div></div>
           <div class="balance-pan right"><div class="pan-rope"></div><div class="pan-dish">?</div></div>
         </div></div><div class="control-card"><div class="game-title">모두 몇 개일까요?</div><p class="game-help">색이 달라도 개수를 모두 세면 돼요.</p>
-        <div class="choice-row">${choiceButtons(shuffle([answer,answer+1,Math.max(1,answer-1)]),answer)}</div>
+        <div class="choice-row">${choiceButtons(uniqueChoices(answer,1),answer)}</div>
         <div class="status-box">${base}개와 ${extra}개를 함께 놓았어요.</div></div></div>`;
       bindChoices(answer,()=>this.renderScale());
     },
@@ -291,7 +333,7 @@ const activities = {
         <div class="equation-display"><span class="hidden-box">🎁</span> + ${"🍎".repeat(add)} &nbsp; = &nbsp; ${"🍎".repeat(total)}</div>
         <div class="equal-message">양쪽의 전체 개수가 같아요</div></div>
         <div class="control-card"><div class="game-title">숨은 수 찾기</div><p class="game-help">오른쪽 전체에서 밖에 보이는 사과를 빼 보세요.</p>
-        <div class="choice-row">${choiceButtons(shuffle([hidden,hidden+1,Math.max(1,hidden-1)]),hidden)}</div>
+        <div class="choice-row">${choiceButtons(uniqueChoices(hidden,1),hidden)}</div>
         <div class="status-box">🎁 + ${add} = ${total}</div></div></div>`;
       bindChoices(hidden,()=>this.renderBox());
     }
@@ -309,6 +351,7 @@ function openActivity(name){
 document.querySelectorAll(".place").forEach(btn=>btn.addEventListener("click",()=>openActivity(btn.dataset.place)));
 $("#dailyStart").onclick=()=>openActivity(["train","pizza","farm","pattern","block","market","balance"][new Date().getDay()%7]);
 $("#backBtn").onclick=()=>showScreen("homeScreen");
+$("#refreshBtn").onclick=()=>{ if(state.current&&activities[state.current]){ tone(520,.08); activities[state.current].render(); toast("새 문제를 준비했어요 🔄"); } };
 $("#homeBtn").onclick=()=>showScreen("homeScreen");
 $("#rewardBtn").onclick=()=>{renderRewards();showScreen("rewardScreen")};
 $("#rewardBackBtn").onclick=()=>showScreen("homeScreen");
