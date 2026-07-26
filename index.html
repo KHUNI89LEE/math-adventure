@@ -50,6 +50,9 @@
         <button class="menu-card sense" data-mode="sense">
           <span>🧠</span><b>수 감각</b><small>더 쉬운 계산 방법 찾기</small>
         </button>
+        <button class="menu-card explore" data-mode="explore">
+          <span>🔍</span><b>수 탐구실</b><small>자리값·약수·배수·규칙</small>
+        </button>
         <button class="menu-card report" id="reportBtn">
           <span>📊</span><b>부모 리포트</b><small>정답률·학습 기록 확인</small>
         </button>
@@ -87,7 +90,10 @@
             <button class="tab" data-tab="why">왜 그럴까?</button>
           </div>
           <div id="explainContent" class="explain-content"></div>
-          <button id="nextStepBtn" class="secondary">다음 단계 보기</button>
+          <div class="lab-actions">
+  <button id="nextStepBtn" class="secondary">다음 단계 보기</button>
+  <button id="playAnimBtn" class="secondary">애니메이션 재생</button>
+</div>
         </aside>
       </div>
     </section>
