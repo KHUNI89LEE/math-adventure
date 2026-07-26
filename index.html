@@ -1,137 +1,129 @@
-(() => {
-'use strict';
-const $ = s => document.querySelector(s);
-const $$ = s => Array.from(document.querySelectorAll(s));
-const WORLDS = {
- add:{title:'더하기 꽃밭', mascot:'🐰', desc:'수 블록을 합치며 받아올림을 배워요.', concepts:['자리값으로 더하기','받아올림','여러 계산 방법']},
- sub:{title:'빼기 눈꽃마을', mascot:'🐻‍❄️', desc:'십과 백을 바꾸며 받아내림을 이해해요.', concepts:['자리값으로 빼기','받아내림','차이로 생각하기']},
- mul:{title:'곱하기 블록도시', mascot:'🦊', desc:'배열과 넓이로 곱셈의 구조를 발견해요.', concepts:['점 배열','면적 모형','분배법칙']},
- div:{title:'나누기 간식섬', mascot:'🐥', desc:'간식을 공평하게 나누며 나눗셈을 배워요.', concepts:['똑같이 나누기','같은 수로 묶기','곱셈으로 확인']},
- sense:{title:'수 감각 구름마을', mascot:'🐶', desc:'10과 100을 이용해 영리하게 계산해요.', concepts:['10 만들기','100 만들기','어림과 보정']},
- explore:{title:'수의 비밀 동굴', mascot:'🦉', desc:'숫자 속 홀짝, 약수, 배수와 규칙을 찾아요.', concepts:['자리값과 숫자합','홀수와 짝수','약수와 배수']}
-};
-let mode='add', conceptIndex=0, problem={};
-let stats=JSON.parse(localStorage.getItem('mathPlayV4')||'null')||{xp:0,solved:0,correct:0,modes:{}};
-Object.keys(WORLDS).forEach(k=>stats.modes[k]??={solved:0,correct:0});
-const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#7c5cff" />
+  <meta name="description" content="만 4세부터 즐기는 그림·애니메이션 중심 수학 놀이터" />
+  <title>콩콩 수학 놀이터</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <button class="round-btn" id="homeBtn" aria-label="홈">🏡</button>
+      <div class="brand">
+        <span class="brand-star">✨</span>
+        <div>
+          <h1>콩콩 수학 놀이터</h1>
+          <p>놀다 보면 수학이 보여요!</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="pill" id="soundBtn" aria-label="소리 켜기/끄기">🔊</button>
+        <button class="pill reward-pill" id="rewardBtn" aria-label="별 보기">⭐ <span id="starCount">0</span></button>
+      </div>
+    </header>
 
-function show(id){['homeView','worldView','reportView'].forEach(x=>$('#'+x).classList.toggle('hidden',x!==id))}
-function save(){localStorage.setItem('mathPlayV4',JSON.stringify(stats));updateStats()}
-function updateStats(){
- $('#xpHome').textContent=stats.xp; $('#solvedHome').textContent=stats.solved;
- $('#accuracyHome').textContent=(stats.solved?Math.round(stats.correct/stats.solved*100):0)+'%';
-}
-function enterWorld(nextMode){
- mode=nextMode; conceptIndex=0; const w=WORLDS[mode];
- $('#worldTitle').textContent=w.title; $('#worldMascot').textContent=w.mascot; $('#worldDesc').textContent=w.desc;
- show('worldView'); switchSection('learn'); renderLearn(); generateProblem();
-}
-function switchSection(section){
- $$('.lesson-tab').forEach(b=>b.classList.toggle('active',b.dataset.section===section));
- $('#learnPanel').classList.toggle('hidden',section!=='learn');
- $('#playPanel').classList.toggle('hidden',section!=='play');
- $('#quizPanel').classList.toggle('hidden',section!=='quiz');
- if(section==='play') renderPlay();
- if(section==='quiz'){generateProblem()}
-}
-function renderLearn(){
- const w=WORLDS[mode];
- $('#learnPanel').innerHTML=`<div class="concept-layout"><div class="concept-menu">${w.concepts.map((c,i)=>`<button class="concept-btn ${i===conceptIndex?'active':''}" data-concept="${i}">${i+1}. ${c}</button>`).join('')}</div><div id="conceptCard" class="concept-card"></div></div>`;
- $$('.concept-btn').forEach(b=>b.onclick=()=>{conceptIndex=Number(b.dataset.concept);renderLearn()});
- renderConceptCard();
-}
-function blocks(n){
- const h=Math.floor(n/100),t=Math.floor(n%100/10),u=n%10;
- return `<div class="place-model"><div class="place-col"><b>백 ${h}</b><div class="objects">${Array(h).fill('<i class="hundred"></i>').join('')}</div></div><div class="place-col"><b>십 ${t}</b><div class="objects">${Array(t).fill('<i class="ten"></i>').join('')}</div></div><div class="place-col"><b>일 ${u}</b><div class="objects">${Array(u).fill('<i class="one"></i>').join('')}</div></div></div>`;
-}
-function renderConceptCard(){
- const c=$('#conceptCard');
- if(mode==='add'){
-  if(conceptIndex===0)c.innerHTML='<h3>243은 어떻게 생겼을까요?</h3><p>백 2개, 십 4개, 일 3개를 모으면 243이에요.</p>'+blocks(243);
-  if(conceptIndex===1)c.innerHTML='<h3>일이 10개가 되면?</h3><p>일 10개를 십 1개로 바꿀 수 있어요. 이것이 받아올림이에요.</p>'+blocks(129)+'<div class="step-strip"><div class="step"><b>9+6=15</b>일 15개</div><div class="step"><b>10개 묶기</b>십 1개 만들기</div><div class="step"><b>십으로 이동</b>일은 5개 남기기</div></div>';
-  if(conceptIndex===2)c.innerHTML='<h3>356 + 198을 여러 방법으로</h3><div class="step-strip"><div class="step"><b>세로셈</b>자리별 계산</div><div class="step"><b>분해</b>356+100+90+8</div><div class="step"><b>보정</b>356+200-2</div></div><p>서로 다른 길을 가도 같은 답 554에 도착해요.</p>';
- }
- if(mode==='sub'){
-  if(conceptIndex===0)c.innerHTML='<h3>462에서 231을 빼 볼까요?</h3><p>백, 십, 일의 같은 자리끼리 빼요.</p>'+blocks(462);
-  if(conceptIndex===1)c.innerHTML='<h3>일의 자리가 부족하면?</h3><p>십 1개를 일 10개로 바꾸어요. 전체 값은 그대로예요.</p>'+blocks(312)+'<div class="step-strip"><div class="step"><b>십 1개</b>값은 10</div><div class="step"><b>일 10개</b>값도 10</div><div class="step"><b>모양만 변화</b>전체 수는 같음</div></div>';
-  if(conceptIndex===2)c.innerHTML='<h3>차이를 이동으로 생각하기</h3><div class="numberline"><div class="arc"></div><span class="tick" style="left:5%">398</span><span class="tick" style="left:48%">400</span><span class="tick" style="right:5%">512</span></div><p>398에서 400까지 2, 다시 512까지 112. 차이는 114예요.</p>';
- }
- if(mode==='mul'){
-  if(conceptIndex===0)c.innerHTML='<h3>4개씩 6줄이면?</h3><p>점 배열은 4 + 4 + 4 + 4 + 4 + 4를 보여줘요.</p><div class="array" style="grid-template-columns:repeat(6,21px)">'+Array(24).fill('<i></i>').join('')+'</div><p style="text-align:center;font-weight:900">4 × 6 = 24</p>';
-  if(conceptIndex===1)c.innerHTML='<h3>23 × 14를 넓이로 나누기</h3><div class="area-model"><div class="area-cell">20×10<br>200</div><div class="area-cell">3×10<br>30</div><div class="area-cell">20×4<br>80</div><div class="area-cell">3×4<br>12</div></div><p>200+30+80+12=322</p>';
-  if(conceptIndex===2)c.innerHTML='<h3>분배법칙</h3><div class="step-strip"><div class="step"><b>23×14</b>그대로 보기</div><div class="step"><b>(20+3)×14</b>23 나누기</div><div class="step"><b>280+42</b>부분곱 합치기</div></div><p>큰 곱셈을 작은 곱셈으로 나누면 쉬워져요.</p>';
- }
- if(mode==='div'){
-  if(conceptIndex===0)c.innerHTML='<h3>12개의 딸기를 3명에게</h3><div class="share-wrap">'+Array(3).fill('<div class="cup"><b>친구</b><div>🍓🍓🍓🍓</div></div>').join('')+'</div><p style="text-align:center">한 명에게 4개씩, 12 ÷ 3 = 4</p>';
-  if(conceptIndex===1)c.innerHTML='<h3>12개에서 4개씩 묶으면?</h3><div class="share-wrap">'+Array(3).fill('<div class="cup">🍪🍪🍪🍪</div>').join('')+'</div><p>4개짜리 묶음이 3개 생겨요. 12 ÷ 4 = 3</p>';
-  if(conceptIndex===2)c.innerHTML='<h3>곱셈으로 확인</h3><div class="step-strip"><div class="step"><b>18÷3=6</b>나눗셈</div><div class="step"><b>6×3=18</b>곱셈</div><div class="step"><b>서로 확인</b>거꾸로 관계</div></div>';
- }
- if(mode==='sense'){
-  if(conceptIndex===0)c.innerHTML='<h3>8 + 7은 10을 먼저 만들어요</h3><div class="step-strip"><div class="step"><b>8+2</b>10 만들기</div><div class="step"><b>7을 2+5</b>나누기</div><div class="step"><b>10+5=15</b>완성</div></div>';
-  if(conceptIndex===1)c.innerHTML='<h3>398 + 27</h3><div class="numberline"><div class="arc"></div><span class="tick" style="left:5%">398</span><span class="tick" style="left:48%">400</span><span class="tick" style="right:5%">425</span></div><p>398에 2를 더해 400을 만들고, 남은 25를 더해요.</p>';
-  if(conceptIndex===2)c.innerHTML='<h3>먼저 어림해 보기</h3><div class="step-strip"><div class="step"><b>487≈500</b>가까운 백</div><div class="step"><b>213≈200</b>가까운 백</div><div class="step"><b>약 700</b>답의 크기 예상</div></div><p>정확한 계산 전에 답이 어느 정도인지 알 수 있어요.</p>';
- }
- if(mode==='explore'){
-  if(conceptIndex===0)c.innerHTML='<h3>538을 자세히 관찰해요</h3>'+blocks(538)+'<div class="step-strip"><div class="step"><b>5+3+8=16</b>자리 숫자의 합</div><div class="step"><b>500+30+8</b>자리값 분해</div></div>';
-  if(conceptIndex===1)c.innerHTML='<h3>홀수와 짝수</h3><div class="step-strip"><div class="step"><b>끝자리 0,2,4,6,8</b>짝수</div><div class="step"><b>끝자리 1,3,5,7,9</b>홀수</div></div><p>2개씩 짝지어 남는 것이 없으면 짝수예요.</p>';
-  if(conceptIndex===2)c.innerHTML='<h3>12의 약수와 배수</h3><div class="secret-grid"><div class="secret"><small>12의 약수</small><b>1,2,3,4,6,12</b></div><div class="secret"><small>12의 배수</small><b>12,24,36,48…</b></div></div><p>약수는 나누어떨어지게 하는 수, 배수는 같은 수를 여러 번 더한 수예요.</p>';
- }
-}
-function renderPlay(){
- const p=$('#playPanel');
- const labels={add:'블록을 더해 보세요',sub:'블록을 줄여 보세요',mul:'줄과 칸을 바꿔 보세요',div:'친구 수를 바꿔 보세요',sense:'숫자를 둥글게 만들어 보세요',explore:'숫자의 성질을 관찰하세요'};
- p.innerHTML=`<div class="play-box"><h3>${labels[mode]}</h3><p>＋와 － 버튼을 눌러 수가 어떻게 달라지는지 살펴보세요.</p><div class="counter"><button id="minusPlay">−</button><output id="playNumber">12</output><button id="plusPlay">＋</button></div><div id="playResult" class="play-result"></div></div>`;
- let n=12;
- const update=()=>{ $('#playNumber').textContent=n; $('#playResult').innerHTML=playVisual(n); };
- $('#minusPlay').onclick=()=>{n=Math.max(1,n-1);update()}; $('#plusPlay').onclick=()=>{n=Math.min(50,n+1);update()}; update();
-}
-function playVisual(n){
- if(mode==='mul'){const rows=Math.max(1,Math.min(6,Math.floor(n/4))),cols=4;return `<div class="array" style="grid-template-columns:repeat(${cols},21px)">${Array(rows*cols).fill('<i></i>').join('')}</div><b>${cols}개씩 ${rows}줄 = ${rows*cols}</b>`}
- if(mode==='div'){const groups=Math.min(5,Math.max(2,n%5+2)),each=Math.floor(n/groups);return `<div class="share-wrap">${Array(groups).fill(`<div class="cup">${Array(each).fill('<span class="snack">🍬</span>').join('')}</div>`).join('')}</div><b>${n}개를 ${groups}명에게 나누면 약 ${each}개씩</b>`}
- if(mode==='sense')return `<div class="secret-grid"><div class="secret"><small>가까운 십</small><b>${Math.round(n/10)*10}</b></div><div class="secret"><small>2배</small><b>${n*2}</b></div></div>`;
- if(mode==='explore'){const ds=[];for(let i=1;i<=n;i++)if(n%i===0)ds.push(i);return `<div class="secret-grid"><div class="secret"><small>홀짝</small><b>${n%2?'홀수':'짝수'}</b></div><div class="secret"><small>약수</small><b>${ds.join(', ')}</b></div></div>`}
- return blocks(n);
-}
-function generateProblem(){
- let a,b,ans;
- if(mode==='add'){a=rnd(120,699);b=rnd(20,299);ans=a+b}
- if(mode==='sub'){a=rnd(220,999);b=rnd(20,a-10);ans=a-b}
- if(mode==='mul'){a=rnd(12,39);b=rnd(3,12);ans=a*b}
- if(mode==='div'){b=rnd(2,8);ans=rnd(3,12);a=b*ans}
- if(mode==='sense'){a=[98,99,198,199,398,498][rnd(0,5)];b=rnd(3,49);ans=a+b}
- if(mode==='explore'){a=rnd(100,999);b=0;ans=Math.floor(a/100)+Math.floor(a%100/10)+a%10}
- problem={a,b,ans}; $('#answerInput').value=''; $('#feedback').className='feedback';
- $('#problemText').textContent=mode==='explore'?`${a}의 자리 숫자 합은?`:`${a} ${mode==='add'?'+':mode==='sub'?'−':mode==='mul'?'×':mode==='div'?'÷':'+'} ${b}`;
- $('#questionHint').textContent=mode==='explore'?'백, 십, 일 자리의 숫자를 더해 보세요.':'그림을 보며 천천히 생각해 보세요.';
- renderQuizVisual();
-}
-function renderQuizVisual(){
- const {a,b,ans}=problem,q=$('#quizVisual');
- if(mode==='add'||mode==='sub')q.innerHTML=blocks(a);
- if(mode==='mul'){const t=Math.floor(a/10)*10,o=a%10;q.innerHTML=`<div class="area-model"><div class="area-cell">${t}×${b}<br>${t*b}</div><div class="area-cell">${o}×${b}<br>${o*b}</div><div class="area-cell">큰 부분</div><div class="area-cell">작은 부분</div></div>`}
- if(mode==='div')q.innerHTML=`<div class="share-wrap">${Array(b).fill(`<div class="cup">${Array(ans).fill('<span class="snack">●</span>').join('')}</div>`).join('')}</div>`;
- if(mode==='sense')q.innerHTML=`<div class="numberline"><div class="arc"></div><span class="tick" style="left:5%">${a}</span><span class="tick" style="left:48%">${a+(10-a%10)%10}</span><span class="tick" style="right:5%">${ans}</span></div>`;
- if(mode==='explore'){const h=Math.floor(a/100),t=Math.floor(a%100/10),u=a%10;q.innerHTML=`<div class="secret-grid"><div class="secret"><small>백의 자리</small><b>${h}</b></div><div class="secret"><small>십의 자리</small><b>${t}</b></div><div class="secret"><small>일의 자리</small><b>${u}</b></div><div class="secret"><small>모두 더하면?</small><b>?</b></div></div>`}
-}
-function check(){
- if($('#answerInput').value==='')return;
- const v=Number($('#answerInput').value),f=$('#feedback');stats.solved++;stats.modes[mode].solved++;
- if(v===problem.ans){stats.correct++;stats.modes[mode].correct++;stats.xp+=10;f.className='feedback show good';f.textContent='정답이에요! 아주 잘했어요 ⭐'}
- else{f.className='feedback show bad';f.textContent='괜찮아요. 그림을 한 번 더 보고 다시 생각해 보세요.'}
- save();
-}
-function report(){
- show('reportView');const acc=stats.solved?Math.round(stats.correct/stats.solved*100):0;
- $('#reportCards').innerHTML=`<div>모은 별<b>${stats.xp}</b></div><div>푼 문제<b>${stats.solved}</b></div><div>정답률<b>${acc}%</b></div><div>학습 나라<b>${Object.values(stats.modes).filter(x=>x.solved).length}</b></div>`;
- $('#modeReport').innerHTML=Object.keys(WORLDS).map(k=>{const m=stats.modes[k],a=m.solved?Math.round(m.correct/m.solved*100):0;return `<div class="mode-row"><b>${WORLDS[k].title}</b><div class="bar"><i style="width:${a}%"></i></div><span>${a}%</span></div>`}).join('');
- $('#recommendation').textContent=stats.solved<6?'각 수학 나라의 “그림으로 배우기”를 먼저 함께 살펴본 뒤 문제를 풀어보세요. 아이가 풀이 방법을 말로 설명하도록 기다려주는 것이 좋습니다.':'정답률이 낮은 나라의 그림 설명을 다시 보고, 같은 문제를 다른 방법으로 풀어보도록 도와주세요.';
-}
-$$('.world').forEach(b=>b.addEventListener('click',()=>enterWorld(b.dataset.world)));
-$$('.lesson-tab').forEach(b=>b.addEventListener('click',()=>switchSection(b.dataset.section)));
-$('#backBtn').onclick=()=>show('homeView'); $('#homeBtn').onclick=()=>show('homeView');
-$('#reportBtn').onclick=report; $('#reportBack').onclick=()=>show('homeView');
-$('#checkBtn').onclick=check; $('#newBtn').onclick=generateProblem;
-$('#answerInput').addEventListener('keydown',e=>{if(e.key==='Enter')check()});
-updateStats();
-if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js?v=4.1');
-})();
+    <main id="main">
+      <section id="homeScreen" class="screen active">
+        <div class="hero">
+          <div class="hero-text">
+            <span class="eyebrow">오늘은 어디에서 놀까?</span>
+            <h2>나만의 수학 마을</h2>
+            <p>건물을 눌러서 움직이고, 나누고, 맞춰 보세요.</p>
+          </div>
+          <div class="mascot" aria-hidden="true">
+            <div class="mascot-ear left"></div>
+            <div class="mascot-ear right"></div>
+            <div class="mascot-face">
+              <span class="eye left"></span><span class="eye right"></span>
+              <span class="mouth">ᴗ</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="village">
+          <button class="place place-train" data-place="train">
+            <span class="float-cloud c1">☁️</span>
+            <span class="place-emoji">🚂</span>
+            <strong>기차역</strong>
+            <small>더하기 · 빼기</small>
+          </button>
+
+          <button class="place place-pizza" data-place="pizza">
+            <span class="place-emoji">🍕</span>
+            <strong>피자 가게</strong>
+            <small>나누기 · 분수</small>
+          </button>
+
+          <button class="place place-farm" data-place="farm">
+            <span class="place-emoji">🐥</span>
+            <strong>동물 농장</strong>
+            <small>곱하기 · 묶음</small>
+          </button>
+
+          <button class="place place-pattern" data-place="pattern">
+            <span class="place-emoji">🌈</span>
+            <strong>무지개 정원</strong>
+            <small>규칙 · 추론</small>
+          </button>
+
+          <button class="place place-block" data-place="block">
+            <span class="place-emoji">🧱</span>
+            <strong>블록 연구소</strong>
+            <small>공간 · 비교</small>
+          </button>
+
+          <button class="place place-market" data-place="market">
+            <span class="place-emoji">🛒</span>
+            <strong>동전 마트</strong>
+            <small>돈 · 계산</small>
+          </button>
+
+          <div class="village-ground">
+            <span>🌼</span><span>🌳</span><span>🌷</span><span>🦋</span><span>🌻</span>
+          </div>
+        </div>
+
+        <section class="daily-card">
+          <div>
+            <span class="badge">오늘의 놀이</span>
+            <h3 id="dailyTitle">기차에 동물 친구를 태워 주세요!</h3>
+          </div>
+          <button class="primary" id="dailyStart">바로 놀기</button>
+        </section>
+      </section>
+
+      <section id="activityScreen" class="screen">
+        <div class="activity-head">
+          <button class="back-btn" id="backBtn">← 마을로</button>
+          <div>
+            <span id="activityBadge" class="badge">놀이</span>
+            <h2 id="activityTitle">활동</h2>
+            <p id="activitySubtitle"></p>
+          </div>
+        </div>
+        <div id="activityStage" class="activity-stage"></div>
+      </section>
+
+      <section id="rewardScreen" class="screen">
+        <div class="reward-screen-card">
+          <button class="back-btn" id="rewardBackBtn">← 돌아가기</button>
+          <div class="trophy">🏆</div>
+          <h2>내가 모은 별</h2>
+          <div class="big-stars"><span id="rewardStars">0</span> ⭐</div>
+          <p>별을 모으면 수학 마을이 더 반짝여요.</p>
+          <div class="sticker-grid" id="stickerGrid"></div>
+        </div>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
