@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#6750A4" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>수와 연산 탐험대</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <p class="eyebrow">MATH ADVENTURE STUDIO</p>
+      <h1>수와 연산 탐험대</h1>
+    </div>
+    <button id="installBtn" class="ghost hidden">앱 설치</button>
+  </header>
+
+  <main>
+    <section id="homeView" class="view active">
+      <div class="hero card">
+        <div>
+          <span class="pill">오늘의 탐험</span>
+          <h2>계산보다 생각하는 힘을 키워요</h2>
+          <p>여러 계산 방법을 보고, 직접 풀고, 왜 그런지 설명해 보세요.</p>
+        </div>
+        <div class="level-box">
+          <strong id="levelText">Lv. 1</strong>
+          <span id="xpText">0 XP</span>
+          <div class="progress"><i id="xpBar"></i></div>
+        </div>
+      </div>
+
+      <div class="menu-grid">
+        <button class="menu-card add" data-mode="add">
+          <span>➕</span><b>덧셈 연구소</b><small>가르기·모으기·보상하기</small>
+        </button>
+        <button class="menu-card sub" data-mode="sub">
+          <span>➖</span><b>뺄셈 연구소</b><small>수직선·받아내림·차이</small>
+        </button>
+        <button class="menu-card mul" data-mode="mul">
+          <span>✖️</span><b>곱셈 연구소</b><small>배열·분배법칙·면적모형</small>
+        </button>
+        <button class="menu-card div" data-mode="div">
+          <span>➗</span><b>나눗셈 연구소</b><small>똑같이 나누기·역연산</small>
+        </button>
+        <button class="menu-card sense" data-mode="sense">
+          <span>🧠</span><b>수 감각</b><small>더 쉬운 계산 방법 찾기</small>
+        </button>
+        <button class="menu-card report" id="reportBtn">
+          <span>📊</span><b>부모 리포트</b><small>정답률·학습 기록 확인</small>
+        </button>
+      </div>
+    </section>
+
+    <section id="labView" class="view">
+      <div class="toolbar">
+        <button class="backBtn">← 홈</button>
+        <div>
+          <p class="eyebrow" id="labEyebrow">연산 연구소</p>
+          <h2 id="labTitle">덧셈 연구소</h2>
+        </div>
+      </div>
+
+      <div class="lab-layout">
+        <article class="card problem-card">
+          <div class="problem-top">
+            <span id="difficultyLabel" class="pill">탐험 1</span>
+            <button id="newProblemBtn" class="ghost">새 문제</button>
+          </div>
+          <div id="problemText" class="problem">38 + 27</div>
+          <div id="visualStage" class="visual-stage"></div>
+          <div class="answer-row">
+            <input id="answerInput" inputmode="numeric" pattern="[0-9]*" placeholder="정답" aria-label="정답 입력" />
+            <button id="checkBtn" class="primary">확인</button>
+          </div>
+          <div id="feedback" class="feedback"></div>
+        </article>
+
+        <aside class="card explain-card">
+          <div class="tabs">
+            <button class="tab active" data-tab="hint">힌트</button>
+            <button class="tab" data-tab="method">여러 방법</button>
+            <button class="tab" data-tab="why">왜 그럴까?</button>
+          </div>
+          <div id="explainContent" class="explain-content"></div>
+          <button id="nextStepBtn" class="secondary">다음 단계 보기</button>
+        </aside>
+      </div>
+    </section>
+
+    <section id="reportView" class="view">
+      <div class="toolbar">
+        <button class="backBtn">← 홈</button>
+        <div>
+          <p class="eyebrow">PARENT REPORT</p>
+          <h2>부모 리포트</h2>
+        </div>
+      </div>
+      <div class="report-grid">
+        <div class="stat card"><small>푼 문제</small><strong id="totalSolved">0</strong></div>
+        <div class="stat card"><small>정답률</small><strong id="accuracy">0%</strong></div>
+        <div class="stat card"><small>연속 정답</small><strong id="bestStreak">0</strong></div>
+        <div class="stat card"><small>총 경험치</small><strong id="totalXp">0 XP</strong></div>
+      </div>
+      <div class="card">
+        <h3>영역별 학습 현황</h3>
+        <div id="modeReport"></div>
+      </div>
+      <div class="card recommendation">
+        <h3>다음 추천 학습</h3>
+        <p id="recommendText">첫 문제를 풀면 추천 학습이 표시됩니다.</p>
+      </div>
+      <button id="resetBtn" class="danger">학습 기록 초기화</button>
+    </section>
+  </main>
+
+  <footer>만 4세 학습자는 보호자와 함께 10~15분씩 사용하는 것을 권장합니다.</footer>
+  <script src="app.js"></script>
+</body>
+</html>
