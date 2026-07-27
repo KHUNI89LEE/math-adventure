@@ -402,6 +402,135 @@ const activities = {
       bindChoices(hidden,()=>this.renderBox());
     }
   }};
+
+/* V12 사고력 놀이 확장: 모든 건물은 처음부터 자유롭게 이용합니다. */
+function playfulSuccess(message="잘 찾았어요!", detail="다음 문제도 재미있게 살펴봐요."){
+  tone(820,.14); toast(message);
+  showResult(message, detail);
+}
+function bindTextAnswer(answer, next, detail=""){
+  document.querySelectorAll(".logic-choice").forEach(btn=>{
+    btn.onclick=()=>{
+      if(btn.dataset.value===String(answer)){
+        document.querySelectorAll(".logic-choice").forEach(x=>x.disabled=true);
+        btn.classList.add("correct");
+        playfulSuccess("정답이에요!", detail);
+        scheduleNext(next,1900);
+      }else wrong(btn,"다른 단서도 천천히 살펴봐요.");
+    };
+  });
+}
+function logicChoices(options){
+  return shuffle(options).map(x=>`<button class="choice logic-choice" data-value="${x}">${x}</button>`).join("");
+}
+
+activities.pattern={
+  badge:"무지개 정원", title:"여러 가지 규칙 찾기", subtitle:"색·모양·개수·방향·위치가 어떻게 변하는지 찾아봐요.",
+  render(){
+    clearPending();
+    const games=[
+      {type:"반복 규칙",hint:"같은 순서가 다시 시작돼요.",seq:["🔴","🟡","🔵","🔴","🟡"],answer:"🔵",opts:["🔵","🟢","🟣"]},
+      {type:"개수 규칙",hint:"한 개씩 많아지고 있어요.",seq:["🍎","🍎🍎","🍎🍎🍎"],answer:"🍎🍎🍎🍎",opts:["🍎🍎","🍎🍎🍎🍎","🍎🍎🍎🍎🍎"]},
+      {type:"방향 규칙",hint:"화살표가 시계 방향으로 돌아가요.",seq:["⬆️","➡️","⬇️"],answer:"⬅️",opts:["⬅️","⬆️","↗️"]},
+      {type:"모양 규칙",hint:"동그라미, 세모, 네모가 반복돼요.",seq:["⚪","🔺","🟦","⚪","🔺"],answer:"🟦",opts:["🟦","🔺","⚪"]},
+      {type:"색과 모양",hint:"색과 모양 두 가지를 함께 살펴봐요.",seq:["🔴●","🔵▲","🟢■","🔴●","🔵▲"],answer:"🟢■",opts:["🟢■","🔴■","🟢▲"]},
+      {type:"위치 이동",hint:"별이 왼쪽에서 오른쪽으로 한 칸씩 움직여요.",seq:["⭐□□","□⭐□","□□⭐"],answer:"⭐□□",opts:["⭐□□","□⭐□","□□⭐"]},
+      {type:"성장 규칙",hint:"식물이 자라는 순서를 생각해요.",seq:["🌱","🌿","🌳"],answer:"🍎🌳",opts:["🍎🌳","🌱","🍂"]},
+      {type:"시간 변화",hint:"아침부터 밤까지의 순서예요.",seq:["🌅","☀️","🌇"],answer:"🌙",opts:["🌙","☀️","🌅"]}
+    ];
+    const g=games[Math.floor(Math.random()*games.length)];
+    $("#activityStage").innerHTML=`<div class="logic-type-chip">${g.type}</div><div class="game-panel"><div class="scene logic-scene"><div class="game-title">다음에 올 것은 무엇일까요?</div><div class="pattern-line varied-pattern">${g.seq.map(x=>`<div class="pattern-item wide-item">${x}</div>`).join("")}<div class="pattern-item missing">?</div></div></div><div class="control-card"><div class="game-title">규칙을 찾아보세요</div><p class="game-help">${g.hint}</p><div class="choice-row">${logicChoices(g.opts)}</div><div class="status-box">눈으로 보고, 소리 내어 순서를 말해 봐요.</div></div></div>`;
+    document.querySelectorAll(".logic-choice").forEach(btn=>btn.onclick=()=>{
+      if(btn.dataset.value===g.answer){document.querySelectorAll(".logic-choice").forEach(x=>x.disabled=true);btn.classList.add("correct");document.querySelector(".missing").textContent=g.answer;document.querySelector(".missing").classList.add("pattern-reveal");playfulSuccess("규칙을 찾았어요!",g.hint);scheduleNext(()=>activities.pattern.render(),1900)}else wrong(btn);
+    });
+  }
+};
+
+activities.block={
+  badge:"블록 공방", title:"돌리고 비추고 완성하기", subtitle:"회전·대칭·공간 감각을 놀이로 익혀요.",
+  render(){
+    clearPending();
+    const mode=Math.floor(Math.random()*3);
+    if(mode===0){
+      const turns=[90,180,270][Math.floor(Math.random()*3)];
+      const answer=turns===90?"➡️":turns===180?"⬇️":"⬅️";
+      $("#activityStage").innerHTML=`<div class="game-panel"><div class="scene logic-scene"><div class="game-title">화살표를 오른쪽으로 ${turns/90}번 돌려요</div><div class="rotation-demo"><span>⬆️</span><b>↻ ${turns}°</b><div>?</div></div></div><div class="control-card"><div class="game-title">어느 방향이 될까요?</div><p class="game-help">손가락으로 화살표를 돌려 보아도 좋아요.</p><div class="choice-row">${logicChoices(["➡️","⬇️","⬅️"])}</div></div></div>`;
+      bindTextAnswer(answer,()=>activities.block.render(),"머릿속으로 모양을 돌렸어요.");
+    }else if(mode===1){
+      $("#activityStage").innerHTML=`<div class="game-panel"><div class="scene logic-scene"><div class="game-title">거울에 비친 모습을 찾아요</div><div class="mirror-demo"><div class="flag-shape">🚩</div><div class="mirror-line"></div><div class="mirror-question">?</div></div></div><div class="control-card"><div class="game-title">좌우가 뒤집힌 그림은?</div><p class="game-help">깃발이 어느 쪽을 바라보는지 확인해요.</p><div class="choice-row"><button class="choice mirror-choice" data-ok="0">🚩</button><button class="choice mirror-choice flipped" data-ok="1">🚩</button><button class="choice mirror-choice upside" data-ok="0">🚩</button></div></div></div>`;
+      document.querySelectorAll(".mirror-choice").forEach(btn=>btn.onclick=()=>{if(btn.dataset.ok==="1"){btn.classList.add("correct");document.querySelectorAll(".mirror-choice").forEach(x=>x.disabled=true);document.querySelector(".mirror-question").innerHTML='<span class="flipped">🚩</span>';playfulSuccess("거울 모양을 찾았어요!","왼쪽과 오른쪽이 서로 바뀌었어요.");scheduleNext(()=>activities.block.render(),1900)}else wrong(btn)});
+    }else{
+      const answer="🟨";
+      $("#activityStage").innerHTML=`<div class="game-panel"><div class="scene logic-scene"><div class="game-title">대칭 그림을 완성해요</div><div class="symmetry-grid"><span>🟨</span><span>🟦</span><i></i><span>🟦</span><span>🟩</span><span>🟪</span><i></i><span>🟪</span><span>🟥</span><span>🟧</span><i></i><span>🟧</span></div></div><div class="control-card"><div class="game-title">가운데 선 건너편에 들어갈 조각은?</div><p class="game-help">왼쪽과 오른쪽이 거울처럼 같아야 해요.</p><div class="choice-row">${logicChoices(["🟨","🟦","🟥"])}</div></div></div>`;
+      bindTextAnswer(answer,()=>activities.block.render(),"양쪽이 거울처럼 똑같아졌어요.");
+    }
+  }
+};
+
+activities.puzzle={
+  badge:"퍼즐하우스", title:"그림 퍼즐 놀이", subtitle:"다른 그림·그림자·빠진 조각을 찾아요.",
+  render(){
+    clearPending();
+    const mode=Math.floor(Math.random()*4);
+    if(mode===0){
+      const items=shuffle(["🍎","🍎","🍎","🍌","🍎","🍎"]);
+      $("#activityStage").innerHTML=`<div class="single-game-card"><div class="game-title">다른 친구 하나를 찾아보세요</div><div class="odd-grid">${items.map((x,i)=>`<button class="picture-tile" data-ok="${x==='🍌'?1:0}">${x}</button>`).join("")}</div><div class="status-box">색과 모양을 자세히 비교해요.</div></div>`;
+      document.querySelectorAll(".picture-tile").forEach(btn=>btn.onclick=()=>{if(btn.dataset.ok==="1"){btn.classList.add("correct-tile");document.querySelectorAll(".picture-tile").forEach(x=>x.disabled=true);playfulSuccess("다른 그림을 찾았어요!","집중해서 차이를 발견했어요.");scheduleNext(()=>activities.puzzle.render(),1800)}else wrong(btn)});
+    }else if(mode===1){
+      const animal=["🐰","🐱","🐶"][Math.floor(Math.random()*3)];
+      const opts=shuffle([animal,...["🐰","🐱","🐶"].filter(x=>x!==animal)]);
+      $("#activityStage").innerHTML=`<div class="game-panel"><div class="scene logic-scene"><div class="game-title">이 그림자의 주인은 누구일까요?</div><div class="shadow-target">${animal}</div></div><div class="control-card"><div class="game-title">같은 모양을 찾아요</div><div class="choice-row">${logicChoices(opts)}</div></div></div>`;
+      bindTextAnswer(animal,()=>activities.puzzle.render(),"바깥 모양을 잘 비교했어요.");
+    }else if(mode===2){
+      $("#activityStage").innerHTML=`<div class="game-panel"><div class="scene logic-scene"><div class="game-title">빠진 조각을 찾아 그림을 완성해요</div><div class="missing-picture"><span>🌳</span><span>☀️</span><span>🐦</span><span class="hole">?</span></div></div><div class="control-card"><div class="game-title">나무 아래에 어울리는 것은?</div><p class="game-help">전체 장면을 생각해 보세요.</p><div class="choice-row">${logicChoices(["🌼","🚀","🐳"])}</div></div></div>`;
+      bindTextAnswer("🌼",()=>activities.puzzle.render(),"장면에 어울리는 조각을 골랐어요.");
+    }else{
+      const pair=shuffle(["🐸","🦊","🐸","🐼","🐵","🐯"]);
+      let first=null,locked=false;
+      $("#activityStage").innerHTML=`<div class="single-game-card"><div class="game-title">똑같은 그림 두 개를 찾아요</div><div class="odd-grid">${pair.map((x,i)=>`<button class="picture-tile covered" data-value="${x}" data-i="${i}"><span>${x}</span></button>`).join("")}</div><div class="status-box">두 장씩 뒤집어 같은 그림을 찾아보세요.</div></div>`;
+      document.querySelectorAll(".picture-tile").forEach(btn=>btn.onclick=()=>{if(locked||btn===first)return;btn.classList.remove("covered");if(!first){first=btn;return;}locked=true;if(first.dataset.value===btn.dataset.value){first.classList.add("correct-tile");btn.classList.add("correct-tile");playfulSuccess("같은 그림을 찾았어요!","두 그림의 모양이 똑같아요.");scheduleNext(()=>activities.puzzle.render(),1800)}else{setTimeout(()=>{first.classList.add("covered");btn.classList.add("covered");first=null;locked=false},900)}});
+    }
+  }
+};
+
+activities.detective={
+  badge:"탐정사무소", title:"콩콩 탐정의 단서 찾기", subtitle:"여러 단서를 차례로 살펴보고 답을 추리해요.",
+  render(){
+    clearPending();
+    const cases=[
+      {story:"토끼가 당근 바구니를 어디에 두었을까요?",clues:["당근은 집 안에 있지 않아요.","나무보다 오른쪽에 있어요.","연못 옆에는 없어요."],answer:"🌳 오른쪽",opts:["🏠 안","🌳 오른쪽","💧 연못 옆"]},
+      {story:"축제 깃발의 다음 색을 찾아주세요!",clues:["빨강 다음에는 노랑이에요.","노랑 다음에는 파랑이에요.","지금 보이는 마지막 색은 노랑이에요."],answer:"🔵",opts:["🔴","🟡","🔵"]},
+      {story:"사라진 동물 친구는 누구일까요?",clues:["네 발로 걸어요.","귀가 길어요.","당근을 좋아해요."],answer:"🐰",opts:["🐰","🐥","🐟"]}
+    ];
+    const c=cases[Math.floor(Math.random()*cases.length)];let shown=1;
+    const draw=()=>{
+      $("#activityStage").innerHTML=`<div class="detective-board"><div class="detective-header"><span>🕵️</span><div><h3>${c.story}</h3><p>단서를 한 장씩 열어 보세요.</p></div></div><div class="clue-list">${c.clues.map((x,i)=>`<div class="clue-card ${i<shown?'open':'locked-clue'}"><b>단서 ${i+1}</b><span>${i<shown?x:'❓'}</span></div>`).join("")}</div>${shown<c.clues.length?`<button class="primary clue-next" id="nextClue">다음 단서 보기</button>`:`<div class="detective-answer"><div class="game-title">모든 단서를 보고 답을 골라요</div><div class="choice-row">${logicChoices(c.opts)}</div></div>`}</div>`;
+      if(shown<c.clues.length){$("#nextClue").onclick=()=>{shown++;tone(560,.1);draw()}}else bindTextAnswer(c.answer,()=>activities.detective.render(),"모든 단서를 연결해서 추리했어요.");
+    };draw();
+  }
+};
+
+activities.focus={
+  badge:"집중력 놀이터", title:"보고 기억하고 찾아보기", subtitle:"짧게 기억하고, 자세히 관찰하고, 정확하게 찾아요.",
+  render(){
+    clearPending();
+    const mode=Math.floor(Math.random()*3);
+    if(mode===0){
+      const count=5+Math.floor(Math.random()*5),target=["🐞","⭐","🍓"][Math.floor(Math.random()*3)];
+      $("#activityStage").innerHTML=`<div class="game-panel"><div class="scene logic-scene"><div class="game-title">${target}가 모두 몇 개일까요?</div><div class="count-cloud">${Array.from({length:count},()=>`<span>${target}</span>`).join("")}${Array.from({length:3},()=>`<span>${["🌼","🍀","🦋"][Math.floor(Math.random()*3)]}</span>`).join("")}</div></div><div class="control-card"><div class="game-title">천천히 하나씩 세어 보세요</div><div class="choice-row">${choiceButtons(uniqueChoices(count,1),count)}</div></div></div>`;
+      bindChoices(count,()=>activities.focus.render(),"정확하게 셌어요!","흩어져 있어도 빠뜨리지 않았어요.");
+    }else if(mode===1){
+      const seq=shuffle(["🍎","🚗","🌙","🐰"]).slice(0,3),answer=seq.join("");
+      $("#activityStage").innerHTML=`<div class="single-game-card memory-card"><div class="game-title">3초 동안 순서를 기억해요</div><div class="memory-line" id="memoryLine">${seq.map(x=>`<span>${x}</span>`).join("")}</div><div class="status-box" id="memoryStatus">눈으로 순서를 기억해 주세요.</div><div class="choice-row hidden" id="memoryChoices">${logicChoices(shuffle([answer,[...seq].reverse().join(""),[seq[1],seq[0],seq[2]].join("")]))}</div></div>`;
+      setTimeout(()=>{const line=$("#memoryLine");if(!line)return;line.innerHTML='<span>❓</span><span>❓</span><span>❓</span>';$("#memoryStatus").textContent="처음에 본 순서를 골라요.";$("#memoryChoices").classList.remove("hidden");bindTextAnswer(answer,()=>activities.focus.render(),"순서를 머릿속에 잘 담아 두었어요.")},3000);
+    }else{
+      const target="🐸";const pool=shuffle(["🐸","🐢","🐊","🦎","🐍","🐲","🐢","🐊","🦎"]);
+      $("#activityStage").innerHTML=`<div class="single-game-card"><div class="game-title">친구들 사이에서 ${target}를 찾아요</div><div class="search-field">${pool.map(x=>`<button class="search-item" data-ok="${x===target?1:0}">${x}</button>`).join("")}</div><div class="status-box">비슷한 초록색 친구들 속에 숨어 있어요.</div></div>`;
+      document.querySelectorAll(".search-item").forEach(btn=>btn.onclick=()=>{if(btn.dataset.ok==="1"){btn.classList.add("found");document.querySelectorAll(".search-item").forEach(x=>x.disabled=true);playfulSuccess("숨은 친구를 찾았어요!","색뿐 아니라 모양도 자세히 보았어요.");scheduleNext(()=>activities.focus.render(),1800)}else wrong(btn)});
+    }
+  }
+};
+
 function shuffle(arr){return [...arr].sort(()=>Math.random()-.5)}
 function openActivity(name){
   state.current=name;
@@ -413,7 +542,7 @@ function openActivity(name){
   a.render();
 }
 document.querySelectorAll(".place").forEach(btn=>btn.addEventListener("click",()=>openActivity(btn.dataset.place)));
-$("#dailyStart").onclick=()=>openActivity(["train","pizza","farm","pattern","block","market","balance"][new Date().getDay()%7]);
+$("#dailyStart").onclick=()=>openActivity(["train","pizza","farm","pattern","block","market","balance","puzzle","detective","focus"][new Date().getDay()%7]);
 $("#backBtn").onclick=()=>showScreen("homeScreen");
 $("#refreshBtn").onclick=()=>{ if(state.current&&activities[state.current]){ clearPending(); tone(520,.08); const stage=$("#activityStage"); stage.classList.remove("instant-refresh"); void stage.offsetWidth; stage.classList.add("instant-refresh"); activities[state.current].render(); toast("새 문제가 바로 바뀌었어요 🔄"); } };
 $("#homeBtn").onclick=()=>showScreen("homeScreen");
