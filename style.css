@@ -214,3 +214,25 @@ button:focus-visible{outline:4px solid rgba(124,92,255,.28);outline-offset:3px}
 .memory-line{display:flex;justify-content:center;gap:20px;margin:32px}.memory-line span{width:105px;height:105px;border-radius:24px;background:#fff;box-shadow:0 8px 20px #0002;display:flex;align-items:center;justify-content:center;font-size:62px}.memory-card .choice{font-size:34px;letter-spacing:8px}
 .search-field{grid-template-columns:repeat(3,1fr)}.search-item{font-size:60px}
 @media(max-width:760px){.odd-grid,.search-field{grid-template-columns:repeat(2,1fr)}.picture-tile,.search-item{min-height:95px}.rotation-demo{font-size:64px;gap:15px}.rotation-demo div{width:90px;height:90px}.mirror-demo{font-size:75px;gap:16px}.mirror-line{height:130px}.symmetry-grid{grid-template-columns:repeat(4,58px)}.symmetry-grid span,.symmetry-grid i{width:58px;height:58px;font-size:35px}.detective-header>span{font-size:58px}}
+
+/* V13 나눗셈 묶음·원화·곱셈 묶음·숫자 등식 */
+.grouped-pizza{max-height:260px;overflow:auto;align-content:flex-start}
+.pizza-bundle{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;min-width:66px;min-height:66px;padding:7px;border:4px solid #e99a32;border-radius:16px;background:#fff2c8;box-shadow:0 5px 0 #c97719;font-weight:900;transition:transform .65s ease,opacity .65s ease}
+.pizza-bundle b{font-size:24px}.pizza-bundle small{font-size:12px}.pizza-bundle.slice-flying{transform:translateY(80px) scale(.65);opacity:.12}
+.bundle-guide{font-weight:900;padding:8px 14px;border-radius:16px;background:#fff8e5;color:#8b5416;text-align:center}
+.compact-plate{border-radius:18px;display:flex;flex-direction:column;align-items:center;gap:5px;min-height:72px}
+.compact-plate span{font-size:14px!important;font-weight:900;animation:none!important}
+.group-visual{display:flex;justify-content:center;align-items:flex-start;gap:20px;flex-wrap:wrap;padding:18px}
+.egg-group{position:relative;display:flex;flex-direction:column;align-items:center;gap:7px;opacity:0;animation:groupAppear .7s ease forwards;animation-delay:var(--delay)}
+.egg-ring{display:grid;grid-template-columns:repeat(3,minmax(42px,1fr));place-items:center;gap:4px;min-width:150px;min-height:120px;padding:18px;border:5px solid #ef7e72;border-radius:50%;background:#fffdf8}
+.group-egg{font-size:34px;animation:softPop .6s ease both}
+.group-label{font-weight:900;padding:5px 11px;border-radius:999px;background:#ffe3df}
+.egg-group small{font-size:18px;font-weight:900}.group-equation{font-size:clamp(22px,4vw,34px);font-weight:900;padding:12px 18px;border-radius:18px;background:#fff}
+@keyframes groupAppear{from{opacity:0;transform:scale(.75)}to{opacity:1;transform:scale(1)}}
+.won-tray{display:grid;grid-template-columns:repeat(4,minmax(85px,1fr));gap:9px;width:min(100%,650px);margin:0 auto;padding:12px}
+.won-piece{display:flex;align-items:center;justify-content:center;gap:3px;min-height:54px;padding:7px;border:3px solid #557c64;border-radius:12px;background:#e7f2e7;font-weight:900;box-shadow:0 4px 0 #9ab4a0}
+.won-piece.bill{aspect-ratio:1.8/1}.won-piece.coin-piece{justify-self:center;width:70px;height:70px;border-radius:50%;background:#f4dd9f;border-color:#a98638;box-shadow:0 4px 0 #8a6c2e}
+.won-piece b{font-size:clamp(13px,2.4vw,18px)}.won-piece small{font-weight:900}.won-wallet span{font-size:clamp(22px,4vw,34px)}.money-choice{min-width:145px}
+.numeric-equality-scene{overflow:hidden}.numeric-equation{display:flex;align-items:center;justify-content:center;gap:clamp(12px,4vw,36px);width:100%;padding:24px 12px;font-size:clamp(40px,9vw,76px);font-weight:900;white-space:nowrap;box-sizing:border-box}.numeric-equation b{color:#7357c8}.number-box{display:inline-flex;align-items:center;justify-content:center;min-width:1.2em;height:1.2em;margin:0 .08em;border:5px solid #ef9a31;border-radius:14px;background:#fff8df;font-style:normal;color:#b76a00}.compact-equal-message{max-width:92%;font-size:clamp(18px,3.5vw,28px)}
+.memory-six{grid-template-columns:repeat(3,minmax(76px,118px));justify-content:center}.picture-tile.matched{pointer-events:none}.picture-tile.matched span{visibility:visible!important}
+@media(max-width:600px){.won-tray{grid-template-columns:repeat(2,minmax(90px,1fr))}.egg-ring{min-width:125px;min-height:105px;padding:12px}.group-egg{font-size:29px}.division-person{min-width:105px}.numeric-equation{gap:10px;padding:20px 5px}.memory-six{grid-template-columns:repeat(3,minmax(68px,1fr))}}

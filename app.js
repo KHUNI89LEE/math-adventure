@@ -222,34 +222,69 @@ const activities = {
     }
   },
   pizza:{
-    badge:"피자 가게", title:"공평한 피자 나누기", subtitle:"정답을 맞히면 피자 조각이 친구들에게 하나씩 나뉘어요.",
+    badge:"피자 가게", title:"공평한 피자 나누기", subtitle:"한 자리·두 자리·세 자리 수를 친구들에게 공평하게 나눠요.",
     render(){
       clearPending();
-      const people=[2,3,4][Math.floor(Math.random()*3)], each=[1,2,3][Math.floor(Math.random()*3)], slices=people*each;
-      $("#activityStage").innerHTML=`<div class="game-panel"><div class="scene"><div class="game-title">피자 ${slices}조각을 ${people}명에게 나눠요!</div><div class="loose-slices" id="looseSlices">${Array.from({length:slices},(_,i)=>`<span class="pizza-slice" id="slice${i}">🍕</span>`).join("")}</div><div class="plates division-plates" id="divisionPlates">${Array.from({length:people},(_,i)=>`<div class="division-person"><b>🙂</b><div class="slice-plate" id="plate${i}"></div><small>0조각</small></div>`).join("")}</div><div class="division-message" id="divisionMessage">정답을 맞히면 하나씩 공평하게 나눠요.</div></div><div class="control-card"><div class="game-title">${slices} ÷ ${people} = ?</div><p class="game-help">한 명이 몇 조각씩 받을까요?</p><div class="choice-row">${choiceButtons(uniqueChoices(each,1),each)}</div><div class="status-box">${slices} ÷ ${people} = ?</div></div></div>`;
-      document.querySelectorAll(".choice").forEach(btn=>btn.onclick=()=>{if(Number(btn.dataset.value)!==each){wrong(btn);return;}document.querySelectorAll(".choice").forEach(x=>x.disabled=true);btn.classList.add("correct");celebrate(1);$("#divisionMessage").textContent="한 조각씩 차례대로 나눠 볼게요!";let index=0;const timer=setInterval(()=>{if(index>=slices){clearInterval(timer);$("#divisionMessage").innerHTML=`모두 똑같이 <b>${each}조각</b>씩 받았어요! 🎉`;tone(880,.12);return;}const target=index%people, slice=$(`#slice${index}`);slice.classList.add("slice-flying");setTimeout(()=>{slice.remove();$(`#plate${target}`).insertAdjacentHTML("beforeend",'<span>🍕</span>');const count=$(`#plate${target}`).children.length;$(`#plate${target}`).nextElementSibling.textContent=`${count}조각`;},650);index++;},1250);});
+      const mode=Math.floor(Math.random()*3);
+      const people=[2,3,4,5][Math.floor(Math.random()*4)];
+      let each;
+      if(mode===0) each=2+Math.floor(Math.random()*7);
+      else if(mode===1) each=10+Math.floor(Math.random()*15);
+      else {
+        const min=Math.ceil(100/people), max=Math.floor(299/people);
+        each=min+Math.floor(Math.random()*(Math.max(min,max)-min+1));
+      }
+      const slices=people*each;
+      const tens=Math.floor(slices/10), ones=slices%10;
+      const levelLabel=mode===0?"한 자리 나눗셈":mode===1?"두 자리 나눗셈":"세 자리 나눗셈";
+      const opts=uniqueChoices(each,Math.max(2,Math.round(each*.12)));
+      const bundleView=`${Array.from({length:tens},(_,i)=>`<span class="pizza-bundle" id="bundle${i}"><b>10</b><small>🍕 묶음</small></span>`).join("")}${Array.from({length:ones},(_,i)=>`<span class="pizza-slice" id="single${i}">🍕</span>`).join("")}`;
+      $("#activityStage").innerHTML=`<div class="game-panel"><div class="scene"><div class="game-title">${levelLabel}: 피자 ${slices}조각을 ${people}명에게 나눠요!</div><div class="bundle-guide">피자 10조각은 한 상자로 묶어서 보여줘요.</div><div class="loose-slices grouped-pizza" id="looseSlices">${bundleView}</div><div class="plates division-plates" id="divisionPlates">${Array.from({length:people},(_,i)=>`<div class="division-person"><b>🙂</b><div class="slice-plate compact-plate" id="plate${i}"><span class="plate-bundles">10조각 묶음 0개</span><span class="plate-singles">낱조각 0개</span></div><small>모두 0조각</small></div>`).join("")}</div><div class="division-message" id="divisionMessage">정답을 맞히면 10조각 묶음부터 공평하게 나눠요.</div></div><div class="control-card"><div class="game-title">${slices} ÷ ${people} = ?</div><p class="game-help">한 명이 몇 조각씩 받을까요?</p><div class="choice-row">${choiceButtons(opts,each)}</div><div class="status-box">${slices} ÷ ${people} = ?</div></div></div>`;
+      document.querySelectorAll(".choice").forEach(btn=>btn.onclick=()=>{
+        if(Number(btn.dataset.value)!==each){wrong(btn);return;}
+        document.querySelectorAll(".choice").forEach(x=>x.disabled=true);btn.classList.add("correct");celebrate(1);
+        $("#divisionMessage").textContent="먼저 10조각 묶음을 한 상자씩 나눠 줄게요!";
+        const counts=Array.from({length:people},()=>({bundles:0,singles:0}));
+        const units=[...Array.from({length:tens},(_,i)=>({kind:"bundle",id:`bundle${i}`,value:10})),...Array.from({length:ones},(_,i)=>({kind:"single",id:`single${i}`,value:1}))];
+        let index=0;
+        const updatePlate=(target)=>{
+          const c=counts[target], plate=$(`#plate${target}`);
+          plate.querySelector(".plate-bundles").textContent=`10조각 묶음 ${c.bundles}개`;
+          plate.querySelector(".plate-singles").textContent=`낱조각 ${c.singles}개`;
+          plate.nextElementSibling.textContent=`모두 ${c.bundles*10+c.singles}조각`;
+        };
+        const timer=setInterval(()=>{
+          if(index>=units.length){clearInterval(timer);$("#divisionMessage").innerHTML=`모두 똑같이 <b>${each}조각</b>씩 받았어요! 🎉`;tone(880,.12);return;}
+          const unit=units[index], target=index%people, el=document.getElementById(unit.id);
+          if(el)el.classList.add("slice-flying");
+          setTimeout(()=>{if(el)el.remove();if(unit.kind==="bundle")counts[target].bundles++;else counts[target].singles++;updatePlate(target);},650);
+          index++;
+          if(index===tens)$("#divisionMessage").textContent="이제 남은 낱조각을 한 조각씩 나눠요!";
+        },1100);
+      });
     }
   },
   farm:{
-    badge:"동물 농장", title:"달걀판 곱셈 놀이", subtitle:"줄과 칸을 보며 묶음을 발견해요.",
+    badge:"동물 농장", title:"동그라미 묶음 곱셈", subtitle:"몇 개씩 묶였는지와 묶음이 몇 개인지 눈으로 확인해요.",
     render(){
       clearPending();
-      const rows=[2,3,4][Math.floor(Math.random()*3)];
-      const cols=[3,4,5][Math.floor(Math.random()*3)];
-      const answer=rows*cols;
+      const inGroup=[2,3,4,5,6][Math.floor(Math.random()*5)];
+      const groups=[2,3,4][Math.floor(Math.random()*3)];
+      const answer=inGroup*groups;
       $("#activityStage").innerHTML=`
         <div class="game-panel">
           <div class="scene">
-            <div class="game-title">${rows}줄에 ${cols}개씩 놓였어요.</div>
-            <div class="array-grid" style="grid-template-columns:repeat(${cols},62px)">
-              ${Array.from({length:answer},()=>`<div class="array-item">🥚</div>`).join("")}
+            <div class="game-title">${inGroup}개씩 동그라미로 묶어 볼게요.</div>
+            <div class="group-visual" id="groupVisual">
+              ${Array.from({length:groups},(_,g)=>`<div class="egg-group" style="--delay:${g*.45}s"><span class="group-label">${g+1}묶음</span><div class="egg-ring">${Array.from({length:inGroup},()=>`<span class="group-egg">🥚</span>`).join("")}</div><small>${inGroup}개</small></div>`).join("")}
             </div>
+            <div class="group-equation">${inGroup}개씩 × ${groups}묶음 = ${answer}개</div>
           </div>
           <div class="control-card">
-            <div class="game-title">${rows} × ${cols} = ?</div>
-            <p class="game-help">한 줄씩 세어도 되고, 묶음으로 생각해도 좋아요.</p>
-            <div class="choice-row">${choiceButtons(uniqueChoices(answer,rows),answer)}</div>
-            <div class="status-box">${cols}개가 ${rows}묶음이에요.</div>
+            <div class="game-title">${inGroup} × ${groups} = ?</div>
+            <p class="game-help">동그라미 하나에 ${inGroup}개가 있고, 모두 ${groups}묶음이에요.</p>
+            <div class="choice-row">${choiceButtons(uniqueChoices(answer,groups),answer)}</div>
+            <div class="status-box">${inGroup} + ${inGroup}${groups>2?` + ${inGroup}`:""}${groups>3?` + ${inGroup}`:""} = ${answer}</div>
           </div>
         </div>`;
       bindChoices(answer,()=>activities.farm.render());
@@ -312,30 +347,37 @@ const activities = {
     }
   },
   market:{
-    badge:"동전 마트", title:"장보기 계산", subtitle:"동전을 쓰고 남은 돈을 계산해요.",
+    badge:"동전 마트", title:"우리나라 돈으로 장보기", subtitle:"실제 원화 지폐와 동전을 보고 금액을 계산해요.",
     render(){
       clearPending();
-      const money=10;
-      const prices=[2,3,4];
-      const items=[["🍎","사과",2],["🍌","바나나",3],["🧃","주스",4]];
+      const denominations=[50000,10000,5000,1000,500,100,10,1];
+      const wallets=[50000,10000,5000,1000,500,100,10];
+      const money=wallets[Math.floor(Math.random()*wallets.length)];
+      const ratios=money>=1000?[.1,.2,.3,.4,.5,.6,.7,.8]:[.1,.2,.3,.4,.5,.6,.7,.8,.9];
+      let price=Math.max(1,Math.round(money*ratios[Math.floor(Math.random()*ratios.length)]));
+      const unit=money>=1000?100:money>=100?10:1;
+      price=Math.max(unit,Math.floor(price/unit)*unit);
+      if(price>=money)price=money-unit;
+      const remain=money-price;
+      const items=[["🍎","사과"],["🍞","빵"],["🧃","주스"],["🧸","인형"],["📚","그림책"]];
       const pick=items[Math.floor(Math.random()*items.length)];
-      const remain=money-pick[2];
+      const choices=shuffle([remain,Math.max(0,remain+unit),Math.max(0,remain-unit)]).filter((v,i,a)=>a.indexOf(v)===i);
+      const moneyBtn=(v)=>`<button class="choice money-choice" data-value="${v}">${v.toLocaleString("ko-KR")}원</button>`;
       $("#activityStage").innerHTML=`
         <div class="game-panel">
           <div class="scene">
-            <div class="wallet">내 지갑: ${"🪙".repeat(5)} <span>${money}</span></div>
-            <div class="market-shelf">
-              ${items.map(x=>`<div class="product ${x[0]===pick[0]?"selected":""}"><div class="emoji">${x[0]}</div><strong>${x[1]}</strong><span>${x[2]}원</span></div>`).join("")}
-            </div>
+            <div class="won-tray">${denominations.map(v=>`<div class="won-piece ${v>=1000?"bill":"coin-piece"}"><b>${v.toLocaleString("ko-KR")}</b><small>원</small></div>`).join("")}</div>
+            <div class="wallet won-wallet">내 지갑: <span>${money.toLocaleString("ko-KR")}원</span></div>
+            <div class="market-shelf"><div class="product selected"><div class="emoji">${pick[0]}</div><strong>${pick[1]}</strong><span>${price.toLocaleString("ko-KR")}원</span></div></div>
           </div>
           <div class="control-card">
-            <div class="game-title">${pick[1]}를 사면 얼마가 남을까요?</div>
-            <p class="game-help">${money}원에서 ${pick[2]}원을 써요.</p>
-            <div class="choice-row">${choiceButtons(uniqueChoices(remain,2),remain)}</div>
-            <div class="status-box">${money} − ${pick[2]} = ?</div>
+            <div class="game-title">${pick[1]}을 사면 얼마가 남을까요?</div>
+            <p class="game-help">${money.toLocaleString("ko-KR")}원에서 ${price.toLocaleString("ko-KR")}원을 써요.</p>
+            <div class="choice-row">${choices.map(moneyBtn).join("")}</div>
+            <div class="status-box">${money.toLocaleString("ko-KR")} − ${price.toLocaleString("ko-KR")} = ?원</div>
           </div>
         </div>`;
-      bindChoices(remain,()=>activities.market.render());
+      document.querySelectorAll(".money-choice").forEach(btn=>btn.onclick=()=>{if(Number(btn.dataset.value)!==remain){wrong(btn);return;}document.querySelectorAll(".money-choice").forEach(x=>x.disabled=true);btn.classList.add("correct");celebrate(1);showResult("계산 성공!",`${remain.toLocaleString("ko-KR")}원이 남았어요.`);scheduleNext(()=>activities.market.render(),1800)});
     }
   }
 ,
@@ -391,15 +433,23 @@ const activities = {
     },
     renderBox(){
       clearPending();
-      const hidden=2+Math.floor(Math.random()*5); const add=1+Math.floor(Math.random()*4); const total=hidden+add;
-      $("#balanceGame").innerHTML=`<div class="game-panel"><div class="scene balance-scene">
-        <div class="game-title">상자 안의 사과는 몇 개일까요?</div>
-        <div class="equation-display"><span class="hidden-box">🎁</span> + ${"🍎".repeat(add)} &nbsp; = &nbsp; ${"🍎".repeat(total)}</div>
-        <div class="equal-message">양쪽의 전체 개수가 같아요</div></div>
-        <div class="control-card"><div class="game-title">숨은 수 찾기</div><p class="game-help">오른쪽 전체에서 밖에 보이는 사과를 빼 보세요.</p>
-        <div class="choice-row">${choiceButtons(uniqueChoices(hidden,1),hidden)}</div>
-        <div class="status-box">🎁 + ${add} = ${total}</div></div></div>`;
-      bindChoices(hidden,()=>this.renderBox());
+      const problems=[
+        {left:"4",right:"3 + □",answer:1,help:"3에 몇을 더하면 4가 될까요?"},
+        {left:"7",right:"5 + □",answer:2,help:"5에 몇을 더하면 7이 될까요?"},
+        {left:"9",right:"□ + 4",answer:5,help:"몇에 4를 더하면 9가 될까요?"},
+        {left:"2",right:"2 × □",answer:1,help:"2를 몇 번 묶으면 2가 될까요?"},
+        {left:"6",right:"2 × □",answer:3,help:"2를 몇 번 묶으면 6이 될까요?"},
+        {left:"8",right:"□ × 2",answer:4,help:"몇 개씩 2묶음이면 8이 될까요?"}
+      ];
+      const p=problems[Math.floor(Math.random()*problems.length)];
+      $("#balanceGame").innerHTML=`<div class="game-panel"><div class="scene balance-scene numeric-equality-scene">
+        <div class="game-title">네모 안에 들어갈 수를 찾아요.</div>
+        <div class="numeric-equation"><span>${p.left}</span><b>=</b><span>${p.right.replace("□",'<i class="number-box">□</i>')}</span></div>
+        <div class="equal-message compact-equal-message">등호 양쪽의 값은 똑같아야 해요.</div></div>
+        <div class="control-card"><div class="game-title">숨은 수 찾기</div><p class="game-help">${p.help}</p>
+        <div class="choice-row">${choiceButtons(uniqueChoices(p.answer,1),p.answer)}</div>
+        <div class="status-box">${p.left} = ${p.right}</div></div></div>`;
+      bindChoices(p.answer,()=>this.renderBox());
     }
   }};
 
@@ -485,10 +535,10 @@ activities.puzzle={
       $("#activityStage").innerHTML=`<div class="game-panel"><div class="scene logic-scene"><div class="game-title">빠진 조각을 찾아 그림을 완성해요</div><div class="missing-picture"><span>🌳</span><span>☀️</span><span>🐦</span><span class="hole">?</span></div></div><div class="control-card"><div class="game-title">나무 아래에 어울리는 것은?</div><p class="game-help">전체 장면을 생각해 보세요.</p><div class="choice-row">${logicChoices(["🌼","🚀","🐳"])}</div></div></div>`;
       bindTextAnswer("🌼",()=>activities.puzzle.render(),"장면에 어울리는 조각을 골랐어요.");
     }else{
-      const pair=shuffle(["🐸","🦊","🐸","🐼","🐵","🐯"]);
-      let first=null,locked=false;
-      $("#activityStage").innerHTML=`<div class="single-game-card"><div class="game-title">똑같은 그림 두 개를 찾아요</div><div class="odd-grid">${pair.map((x,i)=>`<button class="picture-tile covered" data-value="${x}" data-i="${i}"><span>${x}</span></button>`).join("")}</div><div class="status-box">두 장씩 뒤집어 같은 그림을 찾아보세요.</div></div>`;
-      document.querySelectorAll(".picture-tile").forEach(btn=>btn.onclick=()=>{if(locked||btn===first)return;btn.classList.remove("covered");if(!first){first=btn;return;}locked=true;if(first.dataset.value===btn.dataset.value){first.classList.add("correct-tile");btn.classList.add("correct-tile");playfulSuccess("같은 그림을 찾았어요!","두 그림의 모양이 똑같아요.");scheduleNext(()=>activities.puzzle.render(),1800)}else{setTimeout(()=>{first.classList.add("covered");btn.classList.add("covered");first=null;locked=false},900)}});
+      const pair=shuffle(["🐸","🦊","🐼","🐸","🦊","🐼"]);
+      let first=null,locked=false,matchedPairs=0;
+      $("#activityStage").innerHTML=`<div class="single-game-card"><div class="game-title">같은 그림 3쌍을 모두 찾아요</div><div class="odd-grid memory-six">${pair.map((x,i)=>`<button class="picture-tile covered" data-value="${x}" data-i="${i}"><span>${x}</span></button>`).join("")}</div><div class="status-box" id="memoryStatus">찾은 짝: 0 / 3 · 여섯 장을 모두 맞히면 다음 문제로 넘어가요.</div></div>`;
+      document.querySelectorAll(".picture-tile").forEach(btn=>btn.onclick=()=>{if(locked||btn===first||btn.classList.contains("matched"))return;btn.classList.remove("covered");if(!first){first=btn;return;}locked=true;if(first.dataset.value===btn.dataset.value){first.classList.add("correct-tile","matched");btn.classList.add("correct-tile","matched");matchedPairs++;$("#memoryStatus").textContent=`찾은 짝: ${matchedPairs} / 3`;tone(760,.1);first=null;locked=false;if(matchedPairs===3){playfulSuccess("여섯 장을 모두 맞혔어요!","세 쌍을 전부 찾아서 퍼즐을 완성했어요.");scheduleNext(()=>activities.puzzle.render(),2000)}}else{const prev=first;setTimeout(()=>{prev.classList.add("covered");btn.classList.add("covered");first=null;locked=false},900)}});
     }
   }
 };
